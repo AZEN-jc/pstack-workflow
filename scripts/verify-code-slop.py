@@ -9,6 +9,12 @@ from pathlib import Path
 
 CODE_EXTENSIONS = {".py", ".sh", ".js", ".ts", ".tsx", ".go", ".rs"}
 
+SKIP_DIRS = {
+    ".git", ".venv", "venv", "node_modules", "dist", "build", "coverage",
+    "__pycache__", ".pytest_cache", ".ruff_cache", ".mypy_cache",
+    "site-packages", ".next",
+}
+
 SLOP_COMMENT_PATTERNS = [
     r"^\s*(?:#|//)\s*(?:validate|check|verify)\s+(?:the\s+)?(?:input|args|arguments|parameters)\b",
     r"^\s*(?:#|//)\s*(?:initialize|init|set\s+up|define)\s+(?:the\s+)?(?:variables?|state|config|logger)\b",
@@ -34,7 +40,7 @@ def collect_files(targets: list[str]) -> list[Path]:
             files.append(p)
         elif p.is_dir():
             for sub in sorted(p.rglob("*")):
-                if sub.is_file() and sub.suffix in CODE_EXTENSIONS and ".git" not in sub.parts:
+                if sub.is_file() and sub.suffix in CODE_EXTENSIONS and not SKIP_DIRS.intersection(sub.parts):
                     files.append(sub)
     return files
 
