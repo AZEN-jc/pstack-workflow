@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PstackHandoffBrief",
+  "description": "Schema for .agents/handoffs/active-brief.md YAML frontmatter and required markdown sections",
+  "type": "object",
+  "required": [
+    "task_id",
+    "role",
+    "target_agent",
+    "playbook",
+    "required_principles",
+    "verify_cmd"
+  ],
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Unique identifier for the task round"
+    },
+    "role": {
+      "type": "string",
+      "enum": ["investigator", "prose-architect", "implementer", "verifier"],
+      "description": "Stateless subagent role"
+    },
+    "target_agent": {
+      "type": "string",
+      "enum": ["antigravity", "codex", "codex-review", "opencode", "claude"],
+      "description": "Target runner for execution"
+    },
+    "playbook": {
+      "type": "string",
+      "description": "Relative path to the active playbook in .agents/pstack/playbooks/"
+    },
+    "required_principles": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "description": "List of principle files the subagent must read before execution"
+    },
+    "verify_cmd": {
+      "type": "string",
+      "description": "Deterministic shell command that must exit 0 before completion"
+    }
+  },
+  "requiredSections": [
+    "## 1. User Goal (Restated)",
+    "## 2. Consolidated Directives (History & Delta)",
+    "## 3. Evidence Pointers (Read-Only Context)",
+    "## 4. Deliverable Contract"
+  ],
+  "maxInlineCodeFenceLines": 15
+}

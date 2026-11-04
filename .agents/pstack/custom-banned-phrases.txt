@@ -1,0 +1,6 @@
+# Custom Banned Phrases (Managed via `python3 scripts/pstack-verify.py ban "<phrase>"`)
+# 每行一个词条，# 开头为注释。一旦加入，所有 Agent 产出将永久禁止出现该词。
+心智负担
+组合拳
+对齐颗粒度
+赋能业务
