@@ -17,6 +17,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from pstack_resolver import ensure_workspace_skeleton, get_workspace_root
+
 VALID_VERDICTS = ("KEEP", "REVERT", "ROOT_CAUSE", "PERF_WIN")
 
 
@@ -58,7 +60,8 @@ def cmd_add(ledger: Path, args: argparse.Namespace) -> int:
 
 
 def main() -> int:
-    workspace_root = Path(__file__).resolve().parent.parent
+    workspace_root = get_workspace_root()
+    ensure_workspace_skeleton(workspace_root)
     ledger = workspace_root / ".agents/decision.tsv"
 
     parser = argparse.ArgumentParser(description="Manage .agents/decision.tsv empirical audit ledger")

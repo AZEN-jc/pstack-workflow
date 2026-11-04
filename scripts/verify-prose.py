@@ -8,6 +8,8 @@ import re
 import sys
 from pathlib import Path
 
+from pstack_resolver import get_pstack_home, get_workspace_root
+
 BANNED_ZH = [
     "值得注意的是", "总而言之", "综上所述", "不难发现", "显而易见",
     "毋庸置疑", "在当今", "让我们深入", "不仅仅", "更是", "擦出怎样的火花",
@@ -22,14 +24,21 @@ BANNED_EN = [
 
 
 def load_custom_banned(workspace_root: Path) -> list[str]:
-    custom_file = workspace_root / ".agents" / "pstack" / "custom-banned-phrases.txt"
-    if not custom_file.exists():
-        return []
-    phrases = []
-    for line in custom_file.read_text(encoding="utf-8").splitlines():
-        item = line.strip()
-        if item and not item.startswith("#"):
-            phrases.append(item)
+    roots = [get_pstack_home()]
+    if workspace_root not in roots:
+        roots.append(workspace_root)
+
+    phrases: list[str] = []
+    seen: set[str] = set()
+    for root in roots:
+        custom_file = root / ".agents" / "pstack" / "custom-banned-phrases.txt"
+        if not custom_file.exists():
+            continue
+        for line in custom_file.read_text(encoding="utf-8").splitlines():
+            item = line.strip()
+            if item and not item.startswith("#") and item not in seen:
+                seen.add(item)
+                phrases.append(item)
     return phrases
 
 
@@ -62,7 +71,7 @@ def verify_file(filepath: Path, max_zh_chars: int = 45, max_en_words: int = 28) 
     raw_text = filepath.read_text(encoding="utf-8")
     prose = strip_code_blocks_preserve_lines(raw_text)
     lines = prose.splitlines()
-    workspace_root = Path(__file__).resolve().parent.parent
+    workspace_root = get_workspace_root(filepath)
     custom_banned = load_custom_banned(workspace_root)
 
     errors: list[str] = []

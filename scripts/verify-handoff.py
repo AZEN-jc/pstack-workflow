@@ -8,6 +8,8 @@ import re
 import sys
 from pathlib import Path
 
+from pstack_resolver import get_workspace_root, resolve_asset
+
 VALID_VERDICTS = {"KEEP", "REVERT", "ROOT_CAUSE", "PERF_WIN"}
 EXPECTED_TSV_COLS = [
     "timestamp", "task_id", "verdict", "hypothesis",
@@ -71,12 +73,12 @@ def verify_brief(brief_path: Path, schema_path: Path, workspace_root: Path) -> l
             errors.append(f"[Invalid {enum_key}]: `{meta[enum_key]}` 不在允许列表 {allowed} 中。")
 
     if "playbook" in meta:
-        pb_path = workspace_root / str(meta["playbook"])
+        pb_path = resolve_asset(str(meta["playbook"]), workspace_root)
         if not pb_path.exists():
             errors.append(f"[Playbook Pointer Broken]: 找不到剧本文件 `{meta['playbook']}`。")
 
     for p_rel in meta.get("required_principles", []):
-        if not (workspace_root / p_rel).exists():
+        if not resolve_asset(p_rel, workspace_root).exists():
             errors.append(f"[Principle Pointer Broken]: 找不到原则文件 `{p_rel}`。")
 
     for sec in schema.get("requiredSections", []):
@@ -101,7 +103,7 @@ def verify_brief(brief_path: Path, schema_path: Path, workspace_root: Path) -> l
         file_part = ptr.split(":")[0]
         if "/" in file_part or file_part.endswith((".md", ".py", ".tsv", ".sh", ".json")):
             valid_pointer_count += 1
-            if not (workspace_root / file_part).exists():
+            if not resolve_asset(file_part, workspace_root).exists():
                 errors.append(f"[Dangling Evidence Pointer]: 指针引用的文件不存在 `{ptr}`。")
 
     if valid_pointer_count == 0:
@@ -137,12 +139,19 @@ def verify_ledger(ledger_path: Path) -> list[str]:
 
 
 def main() -> int:
-    workspace_root = Path(__file__).resolve().parent.parent
-    brief_path = Path(sys.argv[1]) if len(sys.argv) > 1 else workspace_root / ".agents/handoffs/active-brief.md"
-    if not brief_path.is_absolute():
-        brief_path = workspace_root / brief_path
-    schema_path = workspace_root / ".agents/handoffs/handoff-schema.json"
-    ledger_path = workspace_root / ".agents/decision.tsv"
+    arg_brief = Path(sys.argv[1]) if len(sys.argv) > 1 and not sys.argv[1].startswith("--") else None
+    workspace_root = get_workspace_root(arg_brief)
+    if arg_brief is None:
+        brief_path = resolve_asset(".agents/handoffs/active-brief.md", workspace_root)
+    elif arg_brief.is_absolute():
+        brief_path = arg_brief
+    elif (Path.cwd() / arg_brief).exists():
+        brief_path = (Path.cwd() / arg_brief).resolve()
+    else:
+        brief_path = resolve_asset(arg_brief, workspace_root)
+
+    schema_path = resolve_asset(".agents/handoffs/handoff-schema.json", workspace_root)
+    ledger_path = resolve_asset(".agents/decision.tsv", workspace_root)
 
     errors = verify_brief(brief_path, schema_path, workspace_root) + verify_ledger(ledger_path)
 
