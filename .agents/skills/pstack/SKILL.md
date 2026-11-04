@@ -13,12 +13,13 @@ Activate this skill whenever the user invokes `/poteto-mode`, `/pstack`, mention
 ## 3-Tier Self-Discovery & Path Resolution
 
 1. **Global Anchor (`PSTACK_HOME`)**: `~/.config/pstack/home` links to the canonical Pstack repository, and `~/.local/bin/pstack` (`pstack`, `pstack-verify`, `ag-spawn`) is mounted on `$PATH`.
-2. **Local Skill Mounts (5/5 Agents)**:
+2. **Local Skill Mounts (6/6 Agents)**:
    - **Antigravity (`agy`)**: `~/.gemini/config/skills/pstack`
    - **Claude Code (`claude`)**: `~/.claude/skills/pstack`
    - **Codex CLI (`codex`)**: `~/.codex/skills/pstack`
    - **OpenCode (`opencode`)**: `~/.config/opencode/skills/pstack`
    - **Cursor (`cursor`)**: `~/.cursor/skills-cursor/pstack`
+   - **WorkBuddy AI (`workbuddy`)**: `~/.workbuddy-ai/skills/pstack`
 3. **Overlay Asset Lookup (`scripts/pstack_resolver.py`)**:
    Dynamic state (`.agents/decision.tsv`, `.agents/handoffs/*`) lives in the current `WORKSPACE_ROOT`, while static playbooks, principles, and schemas transparently fall back to `PSTACK_HOME`. Run `pstack init` in any external repository to initialize a zero-copy light workspace.
 

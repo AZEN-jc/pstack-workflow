@@ -33,6 +33,7 @@ register_global_agents() {
     "$HOME/.codex/skills/pstack"
     "$HOME/.config/opencode/skills/pstack"
     "$HOME/.cursor/skills-cursor/pstack"
+    "$HOME/.workbuddy-ai/skills/pstack"
   )
 
   for target in "${skill_targets[@]}"; do
@@ -66,6 +67,7 @@ print_status() {
     "OpenCode Skill:$HOME/.config/opencode/skills/pstack"
     "OpenCode Command (/pstack):$HOME/.config/opencode/command/pstack.md"
     "Cursor IDE (cursor):$HOME/.cursor/skills-cursor/pstack"
+    "WorkBuddy AI (workbuddy):$HOME/.workbuddy-ai/skills/pstack"
   )
   local missing=0
   for item in "${entries[@]}"; do
@@ -84,7 +86,7 @@ print_status() {
   if [[ "$missing" -gt 0 ]]; then
     return 1
   fi
-  echo "STATUS : ALL CHECKS GREEN (5/5 local agents + global CLI mounted)"
+  echo "STATUS : ALL CHECKS GREEN (6/6 local agents + global CLI mounted)"
   echo "===================================================================="
   return 0
 }

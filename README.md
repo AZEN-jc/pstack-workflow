@@ -14,9 +14,9 @@ Pstack 是一套面向硬核软件工程与技术深潜写作的双引擎工作�
 - **只传指针不塞原文 (`Pointer-Only Handoff`)**：主从交接单 `.agents/handoffs/active-brief.md` 仅允许传递 `file:start-end` 行号指针，严禁粘贴超过 15 行源码。
 - **三重确定性门禁 (`Deterministic Harnesses`)**：交付前必须通过交接单检查、零 AI 腔散文检查与 `Comment Sicko` 代码注释检查 `[实测 Measured]`。
 
-## 2. 本机 5 大 Agent 与全局 CLI 挂载矩阵 (Universal Matrix)
+## 2. 本机 6 大 Agent 与全局 CLI 挂载矩阵 (Universal Matrix)
 
-运行一次安装脚本即可在本机 5 大 Agent 环境与 `~/.local/bin` 中同步激活 `pstack` `[实测 Measured]`。
+运行一次安装脚本即可在本机 6 大 Agent 环境与 `~/.local/bin` 中同步激活 `pstack` `[实测 Measured]`。
 
 | 挂载目标 | 全局挂载路径 | 项目级自动入口 |
 | :--- | :--- | :--- |
@@ -27,6 +27,7 @@ Pstack 是一套面向硬核软件工程与技术深潜写作的双引擎工作�
 | **Codex CLI (`codex`)** | `~/.codex/skills/pstack` | `AGENTS.md` |
 | **OpenCode (`opencode`)** | `~/.config/opencode/skills/pstack` + `~/.config/opencode/command/` | `AGENTS.md` |
 | **Cursor IDE (`cursor`)** | `~/.cursor/skills-cursor/pstack` | `.cursor/rules/pstack.mdc` + `AGENTS.md` |
+| **WorkBuddy AI (`workbuddy`)** | `~/.workbuddy-ai/skills/pstack` | `AGENTS.md` + `SKILL.md` |
 
 ## 3. 快速安装与跨仓库轻量初始化 (Quick Start)
 
