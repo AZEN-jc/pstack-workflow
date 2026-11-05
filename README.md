@@ -1,29 +1,34 @@
 # Pstack (Poteto Stack) Multi-Agent Harness
 
-- [![Architecture](https://img.shields.io/badge/Architecture-Dual--Engine_Harness-blueviolet?style=flat-square)](https://github.com/AZEN-jc/pstack-workflow)
-- [![Verification](https://img.shields.io/badge/Verification-Deterministic_0--Slop-success?style=flat-square)](https://github.com/AZEN-jc/pstack-workflow)
-- [![Ecosystem](https://img.shields.io/badge/Ecosystem-6_Agents_Supported-0ea5e9?style=flat-square)](https://github.com/AZEN-jc/pstack-workflow)
-- [![Antigravity](https://img.shields.io/badge/Antigravity-Supported-brightgreen?style=flat-square)](https://github.com/AZEN-jc/pstack-workflow)
-- [![Claude Code](https://img.shields.io/badge/Claude_Code-Supported-coral?style=flat-square)](https://github.com/AZEN-jc/pstack-workflow)
-- [![Codex](https://img.shields.io/badge/Codex_CLI-Supported-black?style=flat-square)](https://github.com/AZEN-jc/pstack-workflow)
-- [![OpenCode](https://img.shields.io/badge/OpenCode-Supported-blue?style=flat-square)](https://github.com/AZEN-jc/pstack-workflow)
-- [![Cursor](https://img.shields.io/badge/Cursor_IDE-Supported-cyan?style=flat-square)](https://github.com/AZEN-jc/pstack-workflow)
-- [![WorkBuddy](https://img.shields.io/badge/WorkBuddy-Supported-purple?style=flat-square)](https://github.com/AZEN-jc/pstack-workflow)
+<p align="center">
+  <img src="https://img.shields.io/badge/Discipline-Deterministic_Coordination-334155?style=flat-square" alt="Discipline" />
+  <img src="https://img.shields.io/badge/Architecture-Dual--Engine_Harness-1e293b?style=flat-square" alt="Architecture" />
+  <img src="https://img.shields.io/badge/Verification-0_Slop_%7C_0_Sycophancy-475569?style=flat-square" alt="Verification" />
+</p>
 
-Pstack 是一套面向硬核软件工程与技术深潜写作的双引擎工作流。它使调用者在 5 大主流 Agent 中获得一致的零废话代码与实证长文产出 `[实测 Measured]`。
+<p align="center">
+  <a href="https://github.com/AZEN-jc/pstack-workflow"><img src="https://img.shields.io/badge/Ecosystem-6_Agents_Supported-334155?style=flat-square" alt="Ecosystem" /></a>
+  <a href="https://github.com/AZEN-jc/pstack-workflow"><img src="https://img.shields.io/badge/Handoff-Pointer--Only_(15_Lines_Max)-1e293b?style=flat-square" alt="Handoff" /></a>
+  <a href="https://github.com/AZEN-jc/pstack-workflow"><img src="https://img.shields.io/badge/Gates-3_Automated_Checkers-475569?style=flat-square" alt="Gates" /></a>
+</p>
 
-本仓库受 Lauren Tan (`@poteto`) 的 `pstack` 与 `unslop` 启发构建。系统通过主从物理隔离与三重确定性脚本门禁消除上下文污染 `[推导 Inferred]`。
+> Autonomous agent straightjacket for multi-agent workspaces.
+> Left unconstrained, coding agents hallucinate imports and invent verbose conversational filler.
+> They paste 500-line diffs across broken paths before anyone notices syntax failures.
+> Pstack replaces conversational trust with mechanical verification gates [Measured].
+> Immutable playbooks stay separated from mutable repository state.
 
-> 🌐 **English Guide & Overview**:
-> Pstack is a dual-engine multi-agent harness for deterministic software engineering.
-> It supports 6 major agents with overlay path resolution and pointer-only handoffs.
-> Strict automated gates enforce zero slop, concise prose, and clean code across workspaces.
+> 面向多智能体协作工作区的确定性工程约束体系。
+> 放任自流的编程智能体会发明大量冗长客套的废话。
+> 它们在耗尽上下文窗口前，在错误路径上堆砌无法编译的补丁。
+> Pstack 以三重自动化物理门禁替代脆弱的人性信任 [推导 Inferred]。
+> 静态母版库与易变的业务仓库彻底物理隔离。
 
 ---
 
 ## 1. 核心架构与三层自发现 (Core Architecture)
 
-调用者在任意外部仓库运行 `pstack` 时无需手工复制剧本。系统通过静态母版库与动态工作区解耦实现零断链运行 `[实测 Measured]`。
+调用者在任意外部仓库运行 `pstack` 时无需手工复制剧本。系统通过静态母版库与动态工作区解耦实现零断链运行 [实测 Measured]。
 
 ```text
                       +---------------------------------------+
@@ -51,15 +56,15 @@ Pstack 是一套面向硬核软件工程与技术深潜写作的双引擎工作�
 
 - **4 行极简入口 (`AGENTS.md` / `CLAUDE.md` / `.cursor/rules/pstack.mdc`)**：砍掉冗长提示词，强制所有 Agent 首步读取 `.agents/pstack/poteto-core.md`。
 - **三层路径自发现 (`scripts/pstack_resolver.py`)**：自动分离静态母版库 `PSTACK_HOME` (`~/.config/pstack/home`) 与当前业务工作区 `WORKSPACE_ROOT`。
-- **层叠资产解析 (`Overlay Asset Lookup`)**：外部轻量工作区仅保留 `.agents/decision.tsv` 与 `handoffs/`，静态剧本与原则自动回退至全局母版 `[实测 Measured]`。
+- **层叠资产解析 (`Overlay Asset Lookup`)**：外部轻量工作区仅保留 `.agents/decision.tsv` 与 `handoffs/`，静态剧本与原则自动回退至全局母版 [实测 Measured]。
 - **只传指针不塞原文 (`Pointer-Only Handoff`)**：主从交接单 `.agents/handoffs/active-brief.md` 仅允许传递 `file:start-end` 行号指针，严禁粘贴超过 15 行源码。
-- **三重确定性门禁 (`Deterministic Harnesses`)**：交付前必须通过交接单检查、零 AI 腔散文检查与 `Comment Sicko` 代码注释检查 `[实测 Measured]`。
+- **三重确定性门禁 (`Deterministic Harnesses`)**：交付前必须通过交接单检查、零 AI 腔散文检查与 `Comment Sicko` 代码注释检查 [实测 Measured]。
 
 ---
 
 ## 2. 本机 6 大 Agent 与全局 CLI 挂载矩阵 (Universal Matrix)
 
-运行一次安装脚本即可在本机 6 大 Agent 环境与 `~/.local/bin` 中同步激活 `pstack` `[实测 Measured]`。
+运行一次安装脚本即可在本机 6 大 Agent 环境与 `~/.local/bin` 中同步激活 `pstack` [实测 Measured]。
 
 | 挂载目标 | 全局挂载路径 | 项目级自动入口 | 核心定位 |
 | :--- | :--- | :--- | :--- |
@@ -96,7 +101,7 @@ pstack path
 
 ## 4. 统一 CLI 与确定性门禁 (Verification CLI)
 
-所有代码与长文产出必须通过 `pstack verify` 校验且返回码为 `0` `[实测 Measured]`：
+所有代码与长文产出必须通过 `pstack verify` 校验且返回码为 `0` [实测 Measured]：
 
 ```bash
 # 运行全部三重门禁 (Handoff + Prose Unslop + Code Comment Sicko)
