@@ -1,5 +1,5 @@
 timestamp	task_id	verdict	hypothesis	evidence_pointer	metric_before	metric_after	lesson_learned
-2026-11-01T14:20:00+08:00	handoff-drift-01	REVERT	在同一子Agent会话内连续追加5轮修改指令可保持早期格式约束	.agents/pstack/poteto-core.md:24-35	第1轮约束遵循率100%	第5轮早期禁令静默丢失率达62%	多轮中断恢复会导致注意力向近期轮次坍缩，必须改为Consolidated Brief拉起全新子Agent
+2026-11-01T14:20:00+08:00	handoff-drift-01	REVERT	在同一子Agent会话内连续追加5轮修改指令可保持早期格式约束	.agents/pstack/pstack-core.md:24-35	第1轮约束遵循率100%	第5轮早期禁令静默丢失率达62%	多轮中断恢复会导致注意力向近期轮次坍缩，必须改为Consolidated Brief拉起全新子Agent
 2026-11-02T10:15:00+08:00	context-bloat-02	PERF_WIN	将全量源码粘贴改为file:start-end文件行号指针可降低首包耗时与幻觉率	.agents/handoffs/active-brief.md:22-30	单次交接Prompt 18400 tokens，幻觉率19%	单次交接Prompt 620 tokens，幻觉率降至0%	只传文件行号指针让Worker按需读取，彻底消除主线程上下文污染
 2026-11-03T16:40:00+08:00	prose-gate-03	REVERT	仅在System Prompt里写明禁用破折号与AI套话即可消除AI腔	.agents/pstack/principles/unslop-zh-en.md:5-20	纯Prompt约束下破折号与套话漏网率41%	接入verify-prose.py静态编译后违规率0%	自然语言规则是信任金字塔最脆弱的一层，必须把文风铁律编译成返回非0退出码的Python脚本
 2026-11-04T09:30:00+08:00	comment-sicko-04	ROOT_CAUSE	AI生成的冗余注释会掩盖未校验的空指针与吞异常分支	scripts/verify-code-slop.py:1-90	PR平均含14处复述型注释与2处空except	强制运行Comment Sicko门禁后冗余注释清零	要求把业务约束写成assert断言或类型定义，直接暴露隐藏的边界漏洞

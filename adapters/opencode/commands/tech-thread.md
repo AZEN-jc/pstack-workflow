@@ -2,7 +2,7 @@
 description: Draft a zero-slop hardcore X tech thread or architecture critique using Pstack
 ---
 
-Read `.agents/pstack/poteto-core.md` and `.agents/pstack/playbooks/tech-thread.md` (or from `~/.config/pstack/home/.agents/pstack/`).
+Read `.agents/pstack/pstack-core.md` and `.agents/pstack/playbooks/tech-thread.md` (or from `~/.config/pstack/home/.agents/pstack/`).
 
 Draft an 8-12 post technical thread or deep postmortem for `$ARGUMENTS`:
 1. Output 3-line alignment (`Target`, `Premise & Bottleneck`, `Smallest Leap`).

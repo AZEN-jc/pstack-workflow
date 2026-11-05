@@ -1,14 +1,14 @@
 ---
 name: pstack
 description: >-
-  Lauren Tan (@poteto) Pstack dual-engine workflow for Antigravity, Claude Code, Codex, OpenCode, and Cursor.
+  Autonomous Pstack protocol stack dual-engine workflow for Antigravity, Claude Code, Codex, OpenCode, and Cursor.
   Enforces coordinator-only main thread, stateless subagent handoffs via pointer briefs,
   empirical decision.tsv logging, Comment Sicko code hygiene, and zero-slop prose verification.
 ---
 
 # Pstack Universal Multi-Agent Skill
 
-Activate this skill whenever the user invokes `/poteto-mode`, `/pstack`, mentions `pstack` / 土豆姐工作流, or requests rigorous bug root-cause isolation, adversarial code review (`/interrogate`), X tech threads (`tech-thread`), or Build-in-Public engineering postmortems.
+Activate this skill whenever the user invokes `/pstack`, mentions `pstack` or protocol stack workflow, or requests rigorous bug root-cause isolation, adversarial code review (`/interrogate`), X tech threads (`tech-thread`), or Build-in-Public engineering postmortems.
 
 ## 3-Tier Self-Discovery & Path Resolution
 
@@ -26,7 +26,7 @@ Activate this skill whenever the user invokes `/poteto-mode`, `/pstack`, mention
 ## Mandatory Execution Loop
 
 1. **Read Coordinator Core First**:
-   Read `.agents/pstack/poteto-core.md` (or `~/.config/pstack/home/.agents/pstack/poteto-core.md` in a light workspace).
+   Read `.agents/pstack/pstack-core.md` (or `~/.config/pstack/home/.agents/pstack/pstack-core.md` in a light workspace).
 2. **Three-Line Alignment (In-Your-Own-Words)**:
    Start your very first response with three concise lines (`Target`, `Premise & Bottleneck`, `Smallest Leap`). Do not wait for confirmation. If existing empirical evidence contradicts the user's premise, cite `file:line` and stop immediately.
 3. **Literal Playbook Mounting**:

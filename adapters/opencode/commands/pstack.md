@@ -1,8 +1,8 @@
 ---
-description: Activate Lauren Tan (@poteto) Pstack Coordinator workflow
+description: Activate Pstack Autonomous Coordinator workflow
 ---
 
-Read `.agents/pstack/poteto-core.md` (or `~/.config/pstack/home/.agents/pstack/poteto-core.md`) immediately.
+Read `.agents/pstack/pstack-core.md` (or `~/.config/pstack/home/.agents/pstack/pstack-core.md`) immediately.
 
 Execute the task `$ARGUMENTS` following the Pstack mandatory loop:
 1. Output 3-line alignment (`Target`, `Premise & Bottleneck`, `Smallest Leap`) in your own words without pleasantries.

@@ -1,4 +1,4 @@
-# Poteto Coordinator Core (Antigravity Dual-Engine Edition)
+# Pstack Coordinator Core (Protocol Stack Multi-Agent Edition)
 
 ## 1. 首句强制对齐 (In-Your-Own-Words)
 收到任务的第一句话，禁止寒暄，直接用你自己的话输出三行：
