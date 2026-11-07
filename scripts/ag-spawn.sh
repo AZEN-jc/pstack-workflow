@@ -9,6 +9,7 @@ PSTACK_CODEX_FLAGS="${PSTACK_CODEX_FLAGS:---full-auto}"
 ARG1=""
 ARG2=""
 
+DO_QUARANTINE=1
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --timeout)
@@ -17,6 +18,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --timeout=*)
       SPAWN_TIMEOUT="${1#*=}"
+      shift
+      ;;
+    --no-quarantine)
+      DO_QUARANTINE=0
       shift
       ;;
     *)
@@ -83,20 +88,137 @@ SPAWN_ACTIVE=0
 on_spawn_exit() {
   local rc=$?
   if [[ "$SPAWN_ACTIVE" -eq 1 && "$rc" -ne 0 ]]; then
-    python3 - "$STATUS_FILE" "$RUNNER" "$rc" "$LOG_REL" "$LOG_FILE" <<'PY'
-import json, sys
+    PATCH_REL="$(python3 - "$WORKSPACE_ROOT" "$TASK_ID" "$RUNNER" "$rc" "$LOG_REL" "$LOG_FILE" "$STATUS_FILE" "$DO_QUARANTINE" <<'PY'
+import json, os, subprocess, sys
 from pathlib import Path
-status_path, runner, rc, log_rel, log_file = sys.argv[1], sys.argv[2], int(sys.argv[3]), sys.argv[4], Path(sys.argv[5])
+
+ws = Path(sys.argv[1]).resolve()
+task_id = sys.argv[2]
+runner = sys.argv[3]
+rc = int(sys.argv[4])
+log_rel = sys.argv[5]
+log_file = Path(sys.argv[6])
+status_path = Path(sys.argv[7])
+do_quarantine = int(sys.argv[8]) == 1
+
+snap_file = ws / ".agents" / "handoffs" / "logs" / f".pre-spawn-{task_id}.json"
+pre_state = {"is_git": False, "untracked": [], "modified": {}}
+if snap_file.exists():
+    try:
+        pre_state = json.loads(snap_file.read_text(encoding="utf-8"))
+    except Exception as exc:
+        print(f"[pre-spawn] snapshot unreadable, using defaults: {exc}", file=sys.stderr)
+
+def run_git(args):
+    try:
+        p = subprocess.run(["git"] + args, cwd=ws, capture_output=True, text=True, check=False)
+        return p.stdout
+    except Exception:
+        return ""
+
+patch_rel = ""
+if pre_state.get("is_git"):
+    current_untracked = [ln.strip() for ln in run_git(["ls-files", "--others", "--exclude-standard"]).splitlines() if ln.strip()]
+    current_untracked = [u for u in current_untracked if not u.startswith(".agents/handoffs/logs/")]
+    pre_untracked = set(pre_state.get("untracked", []))
+    new_untracked = [u for u in current_untracked if u not in pre_untracked]
+
+    current_modified = [ln.strip() for ln in run_git(["diff", "--name-only"]).splitlines() if ln.strip()]
+    pre_modified = pre_state.get("modified", {})
+
+    dirty_tracked = []
+    for mf in current_modified:
+        cur_diff = run_git(["diff", "--", mf])
+        if mf not in pre_modified or cur_diff != pre_modified.get(mf):
+            dirty_tracked.append(mf)
+
+    if dirty_tracked or new_untracked:
+        patch_path = ws / ".agents" / "handoffs" / "logs" / f"crash-partial-{task_id}.patch"
+        patch_path.parent.mkdir(parents=True, exist_ok=True)
+        patch_chunks = []
+        if dirty_tracked:
+            d_out = run_git(["diff", "--"] + dirty_tracked)
+            if d_out.strip():
+                patch_chunks.append(d_out.strip())
+        for nu in new_untracked:
+            nu_path = ws / nu
+            if nu_path.is_file():
+                nu_text = nu_path.read_text(encoding="utf-8", errors="ignore")
+                patch_chunks.append(f"diff --git a/{nu} b/{nu}\nnew file mode 100644\n--- /dev/null\n+++ b/{nu}\n@@ -0,0 +1 @@\n" + nu_text)
+        if patch_chunks:
+            patch_path.write_text("\n\n".join(patch_chunks) + "\n", encoding="utf-8")
+            patch_rel = f".agents/handoffs/logs/crash-partial-{task_id}.patch"
+
+        if do_quarantine:
+            for dt in dirty_tracked:
+                subprocess.run(["git", "checkout", "HEAD", "--", dt], cwd=ws, check=False)
+            for nu in new_untracked:
+                nu_path = ws / nu
+                if nu_path.is_file():
+                    try:
+                        nu_path.unlink()
+                    except OSError:
+                        pass
+
 lines = [ln.strip() for ln in log_file.read_text(encoding="utf-8", errors="ignore").splitlines() if ln.strip()] if log_file.exists() else []
 tail = lines[-1][:72] if lines else f"exit={rc}"
-Path(status_path).write_text(json.dumps({"runner": runner, "exit_code": rc, "log_file": log_rel, "tail": tail}, ensure_ascii=False), encoding="utf-8")
+status_data = {
+    "runner": runner,
+    "exit_code": rc,
+    "log_file": log_rel,
+    "tail": tail,
+}
+if patch_rel:
+    status_data["quarantined_patch"] = patch_rel
+
+status_path.write_text(json.dumps(status_data, ensure_ascii=False), encoding="utf-8")
+if patch_rel:
+    sys.stdout.write(patch_rel)
 PY
-    python3 "$SCRIPT_DIR/pstack-session.py" pause "CRASH_RECOVERY: runner=$RUNNER exit=$rc log=$LOG_REL" || true
+)"
+    if [[ -n "$PATCH_REL" ]]; then
+      echo "[pstack quarantine] Saved partial dirty-tree diff -> $PATCH_REL"
+      if [[ "$DO_QUARANTINE" -eq 1 ]]; then
+        echo "[pstack quarantine] Restored working tree to pre-spawn baseline (idempotent recovery)."
+      fi
+      python3 "$SCRIPT_DIR/pstack-session.py" pause "CRASH_RECOVERY: runner=$RUNNER exit=$rc log=$LOG_REL | Quarantined Patch: $PATCH_REL" || true
+    else
+      python3 "$SCRIPT_DIR/pstack-session.py" pause "CRASH_RECOVERY: runner=$RUNNER exit=$rc log=$LOG_REL" || true
+    fi
+  elif [[ "$SPAWN_ACTIVE" -eq 1 && "$rc" -eq 0 ]]; then
+    rm -f "$LOG_DIR/.pre-spawn-${TASK_ID}.json" 2>/dev/null || true
   fi
 }
 trap on_spawn_exit EXIT
 
 run_with_timeout_and_log() {
+  python3 - "$WORKSPACE_ROOT" "$TASK_ID" "$LOG_DIR" <<'PY'
+import json, os, subprocess, sys
+from pathlib import Path
+
+ws = Path(sys.argv[1]).resolve()
+task_id = sys.argv[2]
+log_dir = Path(sys.argv[3]).resolve()
+log_dir.mkdir(parents=True, exist_ok=True)
+snap_file = log_dir / f".pre-spawn-{task_id}.json"
+
+def run_git(args):
+    try:
+        p = subprocess.run(["git"] + args, cwd=ws, capture_output=True, text=True, check=False)
+        return p.stdout
+    except Exception:
+        return ""
+
+is_git = run_git(["rev-parse", "--is-inside-work-tree"]).strip() == "true"
+snapshot = {"is_git": is_git, "untracked": [], "modified": {}}
+if is_git:
+    untracked = [ln.strip() for ln in run_git(["ls-files", "--others", "--exclude-standard"]).splitlines() if ln.strip()]
+    snapshot["untracked"] = [u for u in untracked if not u.startswith(".agents/handoffs/logs/")]
+    modified_files = [ln.strip() for ln in run_git(["diff", "--name-only"]).splitlines() if ln.strip()]
+    for mf in modified_files:
+        snapshot["modified"][mf] = run_git(["diff", "--", mf])
+snap_file.write_text(json.dumps(snapshot, ensure_ascii=False), encoding="utf-8")
+PY
   SPAWN_ACTIVE=1
   python3 - "$SPAWN_TIMEOUT" "$LOG_FILE" "$STATUS_FILE" "$RUNNER" "$LOG_REL" "$@" <<'PY'
 import json, os, signal, subprocess, sys

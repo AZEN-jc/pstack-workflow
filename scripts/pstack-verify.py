@@ -134,31 +134,88 @@ def export_clean_final(workspace_root: Path, scripts_dir: Path, draft_arg: str |
     )
 
 
-def prep_verifier_digest(workspace_root: Path) -> int:
+def prep_verifier_digest(workspace_root: Path, blind: bool = False) -> int:
     brief_path = resolve_asset(".agents/handoffs/active-brief.md", workspace_root)
     draft_path = resolve_asset(".agents/handoffs/output-draft.md", workspace_root)
     evidence_path = resolve_asset(".agents/handoffs/evidence-pack.md", workspace_root)
 
     goal_line = "(active-brief.md missing)"
+    contract_lines: list[str] = []
     if brief_path.exists():
         raw_brief = brief_path.read_text(encoding="utf-8")
-        m = re.search(r"## 1\. User Goal \(Restated\)\s*\n+([^\n]+)", raw_brief)
-        if m:
-            goal_line = m.group(1).strip()[:90]
-
-    restate_lines: list[str] = []
-    if draft_path.exists():
-        for ln in draft_path.read_text(encoding="utf-8").splitlines()[:6]:
-            if ln.strip().startswith(">"):
-                restate_lines.append(ln.strip()[:90])
+        m_goal = re.search(r"## 1\. User Goal \(Restated\)\s*\n+([^\n]+)", raw_brief)
+        if m_goal:
+            goal_line = m_goal.group(1).strip()[:90]
+        m_contract = re.search(r"## 4\. Deliverable Contract\s*\n([\s\S]*?)(?:\n##|\Z)", raw_brief)
+        if m_contract:
+            contract_lines = [
+                ln.strip()[:80]
+                for ln in m_contract.group(1).splitlines()
+                if ln.strip() and not ln.strip().startswith("#")
+            ]
 
     runtime_lines: list[str] = []
     if evidence_path.exists():
         raw_ev = evidence_path.read_text(encoding="utf-8")
         m_ev = re.search(r"## Runtime Verification Digest([\s\S]*)$", raw_ev)
         if m_ev:
-            for ln in m_ev.group(1).strip().splitlines()[:4]:
-                runtime_lines.append(ln.strip()[:90])
+            for ln in m_ev.group(1).strip().splitlines()[:6]:
+                if ln.strip():
+                    runtime_lines.append(ln.strip()[:90])
+
+    if blind:
+        diff_stat: list[str] = []
+        changed_files: list[str] = []
+        try:
+            p_files = subprocess.run(
+                ["git", "diff", "--name-only"],
+                cwd=workspace_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if p_files.returncode == 0 and p_files.stdout.strip():
+                changed_files = [f.strip() for f in p_files.stdout.splitlines() if f.strip()]
+            p_stat = subprocess.run(
+                ["git", "diff", "--stat"],
+                cwd=workspace_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if p_stat.returncode == 0 and p_stat.stdout.strip():
+                diff_stat = [s.strip() for s in p_stat.stdout.splitlines() if s.strip()]
+        except Exception as exc:
+            print(f"[prep] git diff --stat unavailable, skipped: {exc}")
+
+        files_str = ", ".join(changed_files[:5]) if changed_files else "(no uncommitted git diff)"
+        stat_summary = diff_stat[-1] if diff_stat else "(clean tree)"
+
+        blind_pack: list[str] = [
+            "# Pstack Blind Review Pack (Strict Tab 2 Isolation)",
+            f"- **Workspace**: `{workspace_root.name}`",
+            f"- **User Goal**: {goal_line}",
+            "- **Deliverable Contract**:",
+            *(f"  {c}" for c in (contract_lines[:3] or ["  (none specified)"])),
+            "- **Git Diff & Changed Files**:",
+            f"  - Files: `{files_str}`",
+            f"  - Stat : `{stat_summary}`",
+            "- **Runtime Verification Digest (Gate 4 Evidence)**:",
+            *(f"  {r}" for r in (runtime_lines[:5] or ["  (run `pstack verify all` first)"])),
+            "- **Verifier Next Action**: Audit evidence, write 4 tiers to verifier-verdict.md, run `pstack verify verdict`.",
+        ]
+        bounded_blind = "\n".join(blind_pack[:25]) + "\n"
+        blind_file = workspace_root / ".agents" / "handoffs" / "blind-review-pack.md"
+        blind_file.parent.mkdir(parents=True, exist_ok=True)
+        blind_file.write_text(bounded_blind, encoding="utf-8")
+        print(bounded_blind.rstrip())
+        return 0
+
+    restate_lines: list[str] = []
+    if draft_path.exists():
+        for ln in draft_path.read_text(encoding="utf-8").splitlines()[:6]:
+            if ln.strip().startswith(">"):
+                restate_lines.append(ln.strip()[:90])
 
     out: list[str] = [
         "=== PSTACK INDEPENDENT VERIFIER DIGEST (READ-ONLY) ===",
@@ -290,7 +347,8 @@ def main() -> int:
         return execute_verify_cmd(brief_target, workspace_root)
 
     if mode == "prep-verifier":
-        return prep_verifier_digest(workspace_root)
+        blind = "--blind" in sys.argv[2:]
+        return prep_verifier_digest(workspace_root, blind=blind)
 
     if mode == "verdict":
         verdict_arg = sys.argv[2] if len(sys.argv) > 2 else None
