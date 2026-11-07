@@ -21,11 +21,11 @@ verify_cmd: "python3 -m unittest discover -s tests -q && python3 scripts/verify-
 
 ## 3. Evidence Pointers (Read-Only Context)
 - 入职与验证命令探测：`scripts/pstack_onboard.py:18-83#detect_verify_cmd`
-- 交接单与指针校验器：`scripts/verify-handoff.py:239-329#verify_brief`
-- 跨客户端派发脚本：`scripts/ag-spawn.sh:96-134#run_with_timeout_and_log`
-- 跨窗口快照工具：`scripts/pstack_session.py:108-137#generate_snapshot`
-- 四重门禁总控脚本：`scripts/pstack-verify.py:67-124#execute_verify_cmd`
-- 核心单元测试套件：`tests/test_pstack_harness.py:43-277#TestPstackHarness`
+- 交接单与指针校验器：`scripts/verify-handoff.py:313-403#verify_brief`
+- 跨客户端派发脚本：`scripts/ag-spawn.sh:99-153#run_with_timeout_and_log`
+- 跨窗口快照工具：`scripts/pstack_session.py:109-138#generate_snapshot`
+- 四重门禁总控脚本：`scripts/pstack-verify.py:69-126#execute_verify_cmd`
+- 核心单元测试套件：`tests/test_pstack_harness.py:43-314#TestPstackHarness`
 
 ## 4. Deliverable Contract
 1. `python3 -m unittest discover -s tests -q` 单元测试全部通过（返回码 0）。

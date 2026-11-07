@@ -1,12 +1,12 @@
 {
   "version": "2.1",
-  "elapsed_seconds": 0.25,
+  "elapsed_seconds": 0.198,
   "context_compression": {
     "naive_full_stuffing": {
       "files_count": 17,
-      "lines": 1752,
-      "bytes": 83942,
-      "tokens_est": 15786
+      "lines": 1851,
+      "bytes": 87036,
+      "tokens_est": 16269
     },
     "pstack_tier0_core": {
       "lines": 27,
@@ -17,7 +17,7 @@
       "lines": 61,
       "bytes": 6390,
       "tokens_est": 1219,
-      "token_reduction_pct": 92.3
+      "token_reduction_pct": 92.5
     },
     "pstack_tier2_session_pickup": {
       "lines": 8,

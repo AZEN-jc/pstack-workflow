@@ -383,10 +383,11 @@ pstack test
 """
 
 
-def run_live_ab_experiment(pstack_home: Path, runner: str) -> int:
+def run_live_ab_experiment(pstack_home: Path, runner: str, out_dir: Path | None = None) -> int:
     ts = datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
-    tsv_path = pstack_home / "benchmarks" / "ab-experiments.tsv"
-    tsv_path.parent.mkdir(parents=True, exist_ok=True)
+    target_dir = out_dir or (pstack_home / "benchmarks")
+    target_dir.mkdir(parents=True, exist_ok=True)
+    tsv_path = target_dir / "ab-experiments.tsv"
     if not tsv_path.exists():
         tsv_path.write_text(
             "timestamp\trunner\tcontrol_tokens\ttreatment_tokens\tgate_pass_rate\telapsed_sec\tnotes\n",
@@ -394,21 +395,76 @@ def run_live_ab_experiment(pstack_home: Path, runner: str) -> int:
         )
 
     t0 = time.perf_counter()
-    comp = measure_context_compression(pstack_home, pstack_home)
-    c_tok = comp["naive_full_stuffing"]["tokens_est"]
-    t_tok = comp["pstack_tier0_plus_tier1_brief"]["tokens_est"]
+    with tempfile.TemporaryDirectory() as tmp:
+        root_tmp = Path(tmp).resolve()
+        control_ws = root_tmp / "control"
+        treatment_ws = root_tmp / "treatment"
+        control_ws.mkdir(parents=True, exist_ok=True)
+        treatment_ws.mkdir(parents=True, exist_ok=True)
 
-    if runner != "dry-run":
+        micro_src = "def accumulate(values: list[int]) -> int:\n    return sum(values)\n"
+        (control_ws / "calc.py").write_text(micro_src, encoding="utf-8")
+        (treatment_ws / "calc.py").write_text(micro_src, encoding="utf-8")
+
+        ensure_workspace_skeleton(treatment_ws)
+        treatment_brief = treatment_ws / ".agents" / "handoffs" / "active-brief.md"
+        treatment_brief.write_text(
+            """---
+task_id: "ab-live-01"
+role: "implementer"
+target_agent: "codex"
+playbook: ".agents/pstack/playbooks/bug-fix.md"
+required_principles:
+  - ".agents/pstack/principles/prove-it-works.md"
+  - ".agents/pstack/principles/no-comments.md"
+verify_cmd: "python3 -c 'import calc; assert calc.accumulate([1, 2, 3]) == 6'"
+---
+
+## 1. User Goal (Restated)
+Verify micro-benchmark accumulation logic in isolated Treatment workspace.
+
+## 2. Consolidated Directives (History & Delta)
+- Keep `calc.py` free of redundant comments and verify runtime assertion.
+
+## 3. Evidence Pointers (Read-Only Context)
+- `calc.py:1-2#accumulate`
+
+## 4. Deliverable Contract
+1. Pass all 4 Pstack verification gates.
+""",
+            encoding="utf-8",
+        )
+
+        comp = measure_context_compression(pstack_home, treatment_ws)
+        c_tok = comp["naive_full_stuffing"]["tokens_est"]
+        t_tok = comp["pstack_tier0_plus_tier1_brief"]["tokens_est"]
+
         spawn_script = pstack_home / "scripts" / "ag-spawn.sh"
-        subprocess.run([str(spawn_script), "dry-run", "--timeout", "30"], check=False, capture_output=True)
+        subprocess.run(
+            [str(spawn_script), str(treatment_brief), runner, "--timeout", "60"],
+            cwd=treatment_ws,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+        verify_script = pstack_home / "scripts" / "pstack-verify.py"
+        v_proc = subprocess.run(
+            [sys.executable, str(verify_script), "all"],
+            cwd=treatment_ws,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        gate_rate = "100.0%" if v_proc.returncode == 0 else "0.0%"
 
     elapsed = round(time.perf_counter() - t0, 3)
     with tsv_path.open("a", encoding="utf-8") as f:
         f.write(
-            f"{ts}\t{runner}\t{c_tok}\t{t_tok}\t100.0%\t{elapsed}\t"
-            f"Control vs Pstack v2.1 Treatment worktree comparison\n"
+            f"{ts}\t{runner}\t{c_tok}\t{t_tok}\t{gate_rate}\t{elapsed}\t"
+            f"Control vs Pstack v2.1 Treatment isolated worktree comparison\n"
         )
-    print(f"[OK] Recorded live A/B benchmark row (runner={runner}) -> {tsv_path}")
+    print(f"[OK] Recorded live A/B benchmark row (runner={runner}, gate_pass={gate_rate}) -> {tsv_path}")
     return 0
 
 
@@ -430,7 +486,7 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     if args.live:
-        return run_live_ab_experiment(pstack_home, args.runner)
+        return run_live_ab_experiment(pstack_home, args.runner, out_dir)
 
     t_start = time.perf_counter()
     compression = measure_context_compression(pstack_home, workspace_root)

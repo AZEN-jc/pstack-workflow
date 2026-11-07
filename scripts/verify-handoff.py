@@ -18,10 +18,10 @@ EXPECTED_TSV_COLS = [
 ]
 
 POINTER_TOKEN_RE = re.compile(
-    r"`([A-Za-z0-9_./-]+(?::\d+(?:-\d+)?)?(?:#[A-Za-z0-9_.-]+)?(?:@[0-9a-fA-F]{4,40})?)`"
+    r"`([A-Za-z0-9_./-]+(?::\d+(?:-\d+)?)?(?:#[^\s`@]+)?(?:@[0-9a-fA-F]{4,40})?)`"
 )
 POINTER_PARSE_RE = re.compile(
-    r"^([A-Za-z0-9_./-]+?)(?::(\d+)(?:-(\d+))?)?(?:#([A-Za-z0-9_.-]+))?(?:@([0-9a-fA-F]{4,40}))?$"
+    r"^([A-Za-z0-9_./-]+?)(?::(\d+)(?:-(\d+))?)?(?:#([^\s`@]+))?(?:@([0-9a-fA-F]{4,40}))?$"
 )
 SUPPORTED_POINTER_SUFFIXES = (
     ".md", ".py", ".tsv", ".sh", ".json", ".js", ".ts", ".tsx", ".go", ".rs", ".txt", ".yml", ".yaml", ".toml"
@@ -76,31 +76,113 @@ def parse_evidence_pointer(ptr: str) -> dict[str, object] | None:
     }
 
 
+def _is_overload_decorated(node: ast.AST) -> bool:
+    for dec in getattr(node, "decorator_list", []):
+        if isinstance(dec, ast.Name) and dec.id == "overload":
+            return True
+        if isinstance(dec, ast.Attribute) and dec.attr == "overload":
+            return True
+    return False
+
+
+def _select_best_symbol_node(candidates: list[ast.AST]) -> tuple[int, int] | None:
+    if not candidates:
+        return None
+    non_overload = [n for n in candidates if not _is_overload_decorated(n)]
+    chosen = non_overload[0] if non_overload else candidates[-1]
+    start_line = getattr(chosen, "lineno", 1)
+    end_line = getattr(chosen, "end_lineno", start_line)
+    return int(start_line), int(end_line)
+
+
 def _find_python_symbol_span(text: str, symbol_name: str) -> tuple[int, int] | None:
     try:
         tree = ast.parse(text)
     except SyntaxError:
         return None
 
+    sym_types = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
     if "." in symbol_name:
-        cls_name, method_name = symbol_name.split(".", 1)
-        for node in ast.walk(tree):
-            if isinstance(node, ast.ClassDef) and node.name == cls_name:
-                for child in node.body:
-                    if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)) and child.name == method_name:
-                        return child.lineno, getattr(child, "end_lineno", child.lineno)
-        return None
+        parts = [p for p in symbol_name.split(".") if p]
+        if not parts:
+            return None
+        current_scopes: list[ast.AST] = [
+            n for n in ast.walk(tree) if isinstance(n, sym_types) and n.name == parts[0]
+        ]
+        for part in parts[1:]:
+            next_scopes: list[ast.AST] = []
+            for scope in current_scopes:
+                for child in getattr(scope, "body", []):
+                    if isinstance(child, sym_types) and child.name == part:
+                        next_scopes.append(child)
+            current_scopes = next_scopes
+        return _select_best_symbol_node(current_scopes)
 
-    for node in ast.walk(tree):
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and node.name == symbol_name:
-            return node.lineno, getattr(node, "end_lineno", node.lineno)
+    matches = [n for n in ast.walk(tree) if isinstance(n, sym_types) and n.name == symbol_name]
+    return _select_best_symbol_node(matches)
+
+
+def _count_code_braces(lines: list[str], start_line: int, suffix: str) -> int | None:
+    brace_depth = 0
+    saw_open_brace = False
+    in_block_comment = False
+    quote_char: str | None = None
+
+    for idx in range(start_line, len(lines) + 1):
+        line = lines[idx - 1]
+        i = 0
+        n = len(line)
+        while i < n:
+            ch = line[i]
+            nxt = line[i + 1] if i + 1 < n else ""
+
+            if in_block_comment:
+                if ch == "*" and nxt == "/":
+                    in_block_comment = False
+                    i += 2
+                    continue
+                i += 1
+                continue
+
+            if quote_char is not None:
+                if ch == "\\":
+                    i += 2
+                    continue
+                if ch == quote_char:
+                    quote_char = None
+                i += 1
+                continue
+
+            if suffix != ".sh" and ch == "/" and nxt == "/":
+                break
+            if suffix != ".sh" and ch == "/" and nxt == "*":
+                in_block_comment = True
+                i += 2
+                continue
+            if suffix == ".sh" and ch == "#" and (i == 0 or line[i - 1].isspace()):
+                break
+
+            if ch in ("'", '"', "`"):
+                quote_char = ch
+                i += 1
+                continue
+
+            if ch == "{":
+                saw_open_brace = True
+                brace_depth += 1
+            elif ch == "}":
+                brace_depth -= 1
+                if saw_open_brace and brace_depth <= 0:
+                    return idx
+            i += 1
+
     return None
 
 
 def _find_regex_symbol_span(lines: list[str], symbol_name: str, suffix: str) -> tuple[int, int] | None:
     esc = re.escape(symbol_name)
     if suffix == ".md":
-        heading_re = re.compile(rf"^\s*(#+)\s+.*?\b{esc}\b")
+        heading_re = re.compile(rf"^\s*(#+)\s+.*?(?:(?<![A-Za-z0-9_]){esc}(?![A-Za-z0-9_]))")
         for idx, line in enumerate(lines, 1):
             m = heading_re.match(line)
             if m:
@@ -131,17 +213,9 @@ def _find_regex_symbol_span(lines: list[str], symbol_name: str, suffix: str) -> 
     if start_line is None:
         return None
 
-    brace_depth = 0
-    saw_open_brace = False
-    for idx in range(start_line, len(lines) + 1):
-        line = lines[idx - 1]
-        opens = line.count("{")
-        closes = line.count("}")
-        if opens > 0:
-            saw_open_brace = True
-        brace_depth += opens - closes
-        if saw_open_brace and brace_depth <= 0:
-            return start_line, idx
+    brace_end = _count_code_braces(lines, start_line, suffix)
+    if brace_end is not None:
+        return start_line, brace_end
 
     end_line = min(len(lines), start_line + 25)
     for idx in range(start_line + 1, len(lines) + 1):

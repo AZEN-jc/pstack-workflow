@@ -49,11 +49,12 @@ def read_brief_meta(workspace_root: Path) -> tuple[str, str, str]:
     raw = brief.read_text(encoding="utf-8")
     tid = re.search(r'^task_id:\s*["\']?([^"\'\n]+)["\']?', raw, re.MULTILINE)
     role = re.search(r'^role:\s*["\']?([^"\'\n]+)["\']?', raw, re.MULTILINE)
-    vcmd = re.search(r'^verify_cmd:\s*["\']?([^"\'\n]+)["\']?', raw, re.MULTILINE)
+    vcmd = re.search(r"^verify_cmd:\s*(.+)$", raw, re.MULTILINE)
+    vcmd_val = vcmd.group(1).strip().strip('"').strip("'") if vcmd else "pstack verify all"
     return (
         tid.group(1).strip() if tid else "unknown",
         role.group(1).strip() if role else "implementer",
-        vcmd.group(1).strip() if vcmd else "pstack verify all",
+        vcmd_val,
     )
 
 

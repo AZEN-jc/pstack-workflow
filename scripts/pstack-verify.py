@@ -40,10 +40,12 @@ def extract_verify_cmd(brief_path: Path, workspace_root: Path) -> str:
     if not brief_path.exists():
         return detect_verify_cmd(workspace_root)
     raw = brief_path.read_text(encoding="utf-8")
-    match = re.search(r'^verify_cmd:\s*["\']?([^"\'\n]+)["\']?', raw, re.MULTILINE)
+    match = re.search(r"^verify_cmd:\s*(.+)$", raw, re.MULTILINE)
     if not match:
         return detect_verify_cmd(workspace_root)
     cmd = match.group(1).strip()
+    if (cmd.startswith('"') and cmd.endswith('"')) or (cmd.startswith("'") and cmd.endswith("'")):
+        cmd = cmd[1:-1].strip()
     if not cmd or any(pat in cmd for pat in RECURSIVE_VERIFY_PATTERNS):
         return detect_verify_cmd(workspace_root)
     return cmd
@@ -267,13 +269,16 @@ def main() -> int:
             extra = raw_args
         return run_step([sys.executable, str(scripts_dir / "verify-handoff.py"), target, *extra])
 
+    tests_dir = pstack_home / "tests"
+    default_home_targets = [str(scripts_dir), str(tests_dir)] if tests_dir.is_dir() else [str(scripts_dir)]
+
     if mode == "code":
         if len(sys.argv) > 2:
             targets = sys.argv[2:]
         elif workspace_root != pstack_home:
-            targets = [str(workspace_root), str(scripts_dir)]
+            targets = [str(workspace_root), *default_home_targets]
         else:
-            targets = [str(scripts_dir)]
+            targets = default_home_targets
         return run_step([sys.executable, str(scripts_dir / "verify-code-slop.py"), *targets])
 
     if mode == "cmd":
@@ -301,9 +306,9 @@ def main() -> int:
         brief_target = resolve_asset(".agents/handoffs/active-brief.md", workspace_root)
         draft_target = resolve_asset(".agents/handoffs/output-draft.md", workspace_root)
         code_targets = (
-            [str(workspace_root), str(scripts_dir)]
+            [str(workspace_root), *default_home_targets]
             if workspace_root != pstack_home
-            else [str(scripts_dir)]
+            else default_home_targets
         )
         rc1 = run_step([sys.executable, str(scripts_dir / "verify-handoff.py"), str(brief_target), "--fix"])
         rc2 = run_step([sys.executable, str(scripts_dir / "verify-prose.py"), str(draft_target)])

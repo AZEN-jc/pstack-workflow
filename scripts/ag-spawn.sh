@@ -58,6 +58,9 @@ if [[ ! -f "$BRIEF_FILE" ]]; then
   exit 1
 fi
 
+WORKSPACE_ROOT="$(python3 -c 'import sys; from pathlib import Path; sys.path.insert(0, sys.argv[1]); from pstack_resolver import get_workspace_root; print(get_workspace_root(Path(sys.argv[2])))' "$SCRIPT_DIR" "$BRIEF_FILE")"
+export PSTACK_WORKSPACE="$WORKSPACE_ROOT"
+
 echo ">>> [pstack gate] Validating handoff brief & ledger before spawning subagent..."
 python3 "$SCRIPT_DIR/verify-handoff.py" "$BRIEF_FILE" --fix
 
@@ -96,7 +99,7 @@ trap on_spawn_exit EXIT
 run_with_timeout_and_log() {
   SPAWN_ACTIVE=1
   python3 - "$SPAWN_TIMEOUT" "$LOG_FILE" "$STATUS_FILE" "$RUNNER" "$LOG_REL" "$@" <<'PY'
-import json, subprocess, sys
+import json, os, signal, subprocess, sys
 from pathlib import Path
 
 timeout_sec = float(sys.argv[1])
@@ -108,14 +111,30 @@ cmd = sys.argv[6:]
 
 log_path.parent.mkdir(parents=True, exist_ok=True)
 try:
-    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout_sec, check=False)
-    out = (proc.stdout or "") + ("\n" + proc.stderr if proc.stderr else "")
-    rc = proc.returncode
-except subprocess.TimeoutExpired as exc:
-    stdout_part = exc.stdout.decode("utf-8", errors="ignore") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
-    stderr_part = exc.stderr.decode("utf-8", errors="ignore") if isinstance(exc.stderr, bytes) else (exc.stderr or "")
-    out = stdout_part + "\n" + stderr_part + f"\n[TIMEOUT] Subagent {runner} exceeded {timeout_sec}s limit.\n"
-    rc = 124
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        start_new_session=True,
+    )
+    try:
+        stdout_part, stderr_part = proc.communicate(timeout=timeout_sec)
+        out = (stdout_part or "") + ("\n" + stderr_part if stderr_part else "")
+        rc = proc.returncode
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except ProcessLookupError as exc:
+            sys.stderr.write(f"{exc}\n")
+        stdout_part, stderr_part = proc.communicate()
+        out = (
+            (stdout_part or "")
+            + "\n"
+            + (stderr_part or "")
+            + f"\n[TIMEOUT] Subagent {runner} exceeded {timeout_sec}s limit.\n"
+        )
+        rc = 124
 except FileNotFoundError:
     out = f"[ERROR] Runner binary not found on PATH: {cmd[0]}\n"
     rc = 127

@@ -18,7 +18,7 @@ SCRIPTS_DIR = REPO_ROOT / "scripts"
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-from pstack_bench import measure_context_compression, run_adversarial_mutation_suite
+from pstack_bench import measure_context_compression, run_adversarial_mutation_suite, run_live_ab_experiment
 from pstack_onboard import detect_verify_cmd
 from pstack_resolver import ensure_workspace_skeleton, get_pstack_home, get_workspace_root, resolve_asset
 from pstack_session import generate_snapshot
@@ -102,6 +102,23 @@ class TestPstackHarness(unittest.TestCase):
             sh_res = verify_handoff.resolve_and_validate_pointer("run.sh#deploy_app", ws)
             self.assertTrue(sh_res["valid"])
             self.assertEqual(sh_res["healed_ptr"], "run.sh:2-4#deploy_app")
+
+            nested_span = verify_handoff._find_python_symbol_span(
+                "class Outer:\n    class Inner:\n        @overload\n        def run(self, x: int) -> int: ...\n        def run(self, x: object) -> int:\n            return 1\n",
+                "Outer.Inner.run",
+            )
+            self.assertEqual(nested_span, (5, 6))
+
+            ts_span = verify_handoff._find_regex_symbol_span(
+                ["function parse() {", '  const brace = "}";', "  // comment }", "  return 1;", "}"],
+                "parse",
+                ".ts",
+            )
+            self.assertEqual(ts_span, (1, 5))
+
+            zh_md = verify_handoff.resolve_and_validate_pointer(".agents/pstack/pstack-core.md#剧本原样挂载", ws)
+            self.assertTrue(zh_md["valid"])
+            self.assertEqual(zh_md["healed_ptr"], ".agents/pstack/pstack-core.md:10-21#剧本原样挂载")
 
             brief_path = ws / ".agents" / "handoffs" / "active-brief.md"
             brief_path.write_text(
@@ -269,12 +286,32 @@ Test pointer auto healing.
             self.assertTrue(snap.is_file())
             self.assertIn("CRASH_RECOVERY", snap.read_text(encoding="utf-8"))
 
+            env["PSTACK_SPAWN_TEST_CMD"] = "echo start; sleep 4; echo done"
+            proc_timeout = subprocess.run(
+                [str(spawn_sh), "codex", "--timeout", "0.4"],
+                cwd=ws,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(proc_timeout.returncode, 124)
+
     def test_bench_suite_execution(self) -> None:
         comp = measure_context_compression(REPO_ROOT, REPO_ROOT)
         self.assertGreater(comp["pstack_tier0_plus_tier1_brief"]["token_reduction_pct"], 50.0)
         cases = run_adversarial_mutation_suite(REPO_ROOT)
         self.assertEqual(len(cases), 12)
         self.assertTrue(all(c["intercepted"] for c in cases))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out_dir = Path(tmp).resolve()
+            with redirect_stdout(io.StringIO()):
+                rc_live = run_live_ab_experiment(REPO_ROOT, "workbuddy", out_dir=out_dir)
+            self.assertEqual(rc_live, 0)
+            tsv_text = (out_dir / "ab-experiments.tsv").read_text(encoding="utf-8")
+            self.assertIn("workbuddy", tsv_text)
+            self.assertIn("100.0%", tsv_text)
 
 
 if __name__ == "__main__":
