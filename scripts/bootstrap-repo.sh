@@ -28,8 +28,9 @@ register_global_agents() {
   ln -sfn "$SOURCE_ROOT/scripts/pstack-correct.py" "$HOME/.local/bin/pstack-correct"
   ln -sfn "$SOURCE_ROOT/scripts/pstack-session.py" "$HOME/.local/bin/pstack-session"
   ln -sfn "$SOURCE_ROOT/scripts/pstack-onboard.py" "$HOME/.local/bin/pstack-onboard"
+  ln -sfn "$SOURCE_ROOT/scripts/pstack_update.py" "$HOME/.local/bin/pstack-update"
   ln -sfn "$SOURCE_ROOT/scripts/ag-spawn.sh" "$HOME/.local/bin/ag-spawn"
-  echo "[OK] Linked global CLIs in $HOME/.local/bin (pstack, pstack-verify, pstack-correct, pstack-session, pstack-onboard, ag-spawn)"
+  echo "[OK] Linked global CLIs in $HOME/.local/bin (pstack, pstack-verify, pstack-correct, pstack-session, pstack-onboard, pstack-update, ag-spawn)"
 
   local skill_targets=(
     "$HOME/.gemini/config/skills/pstack"
@@ -90,6 +91,7 @@ print_status() {
       missing=$((missing + 1))
     fi
   done
+  python3 "$SOURCE_ROOT/scripts/pstack_update.py" --status-line || true
   echo "===================================================================="
   if [[ "$missing" -gt 0 ]]; then
     return 1

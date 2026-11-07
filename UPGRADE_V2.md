@@ -68,6 +68,10 @@ pstack correct --prose-ban "心智负担"
 # 4. 断点续传：生成并读取严格 ≤ 20 行的跨窗口快照 (.agents/handoffs/session-snapshot.md)
 pstack pause "v2.0 upgrade complete"
 pstack pickup
+
+# 5. 远程同步：自动检查 GitHub 远端更新并全量刷新本机 8 路宿主挂载
+pstack update --check
+pstack update
 ```
 
 ---

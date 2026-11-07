@@ -44,6 +44,12 @@ case "$SUBCMD" in
   spawn)
     exec "$SCRIPT_DIR/ag-spawn.sh" "$@"
     ;;
+  update)
+    exec python3 "$SCRIPT_DIR/pstack_update.py" "$@"
+    ;;
+  check-update)
+    exec python3 "$SCRIPT_DIR/pstack_update.py" --check "$@"
+    ;;
   log)
     LOG_ACTION="${1:-list}"
     shift || true
@@ -53,7 +59,7 @@ case "$SUBCMD" in
     exec python3 "$SCRIPT_DIR/pstack-verify.py" ban "$@"
     ;;
   *)
-    echo "Usage: pstack <init|status|path|verify|correct|pause|pickup|onboard|export|spawn|log|ban> [args...]"
+    echo "Usage: pstack <init|status|path|verify|correct|pause|pickup|onboard|export|update|check-update|spawn|log|ban> [args...]"
     exit 2
     ;;
 esac
