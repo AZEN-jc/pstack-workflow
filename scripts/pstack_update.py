@@ -68,10 +68,24 @@ def check_update(repo_dir: Path, timeout: int = 5) -> dict:
 
     fetch_code, _ = run_git(["fetch", "origin", remote_branch, "--quiet"], repo_dir, timeout=15)
     commit_list = []
+    behind_count = 0
     if fetch_code == 0:
-        _, log_out = run_git(["log", f"HEAD..origin/{remote_branch}", "--oneline", "-n", "5"], repo_dir)
-        if log_out:
-            commit_list = [line.strip() for line in log_out.splitlines() if line.strip()]
+        _, count_out = run_git(["rev-list", "--count", f"HEAD..origin/{remote_branch}"], repo_dir)
+        if count_out.isdigit():
+            behind_count = int(count_out)
+        if behind_count > 0:
+            _, log_out = run_git(["log", f"HEAD..origin/{remote_branch}", "--oneline", "-n", "5"], repo_dir)
+            if log_out:
+                commit_list = [line.strip() for line in log_out.splitlines() if line.strip()]
+
+    if behind_count == 0:
+        return {
+            "status": "up_to_date",
+            "local_head": local_head[:7],
+            "remote_head": remote_head[:7],
+            "remote_branch": remote_branch,
+            "message": f"Up to date with origin/{remote_branch} ({local_head[:7]})",
+        }
 
     return {
         "status": "update_available",
@@ -79,7 +93,7 @@ def check_update(repo_dir: Path, timeout: int = 5) -> dict:
         "remote_head": remote_head[:7],
         "remote_branch": remote_branch,
         "commits": commit_list,
-        "message": f"Update available: {len(commit_list)} new commits (local {local_head[:7]} -> remote {remote_head[:7]})",
+        "message": f"Update available: {behind_count} new commits (local {local_head[:7]} -> remote {remote_head[:7]})",
     }
 
 def print_status_line(repo_dir: Path, timeout: int = 3) -> None:

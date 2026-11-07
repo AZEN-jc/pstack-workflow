@@ -11,9 +11,9 @@
 - Logged into `github.com` via `gh` CLI as `azen07508-debug` with `repo`, `workflow`, `gist` scopes.
 
 ## Runtime Verification Digest
-- **Command**: `python3 scripts/verify-handoff.py && python3 scripts/verify-code-slop.py scripts` (`[实测 Measured]` at `2026-11-07T15:23:00+08:00`)
+- **Command**: `python3 scripts/verify-handoff.py && python3 scripts/verify-code-slop.py scripts` (`[实测 Measured]` at `2026-11-07T15:24:04+08:00`)
 - **Exit Code & Digest**: `exit=0` | `sha256=2a8b5a5b836f`
-- **Git Diff Summary**: `6 files changed, 121 insertions(+), 127 deletions(-)`
+- **Git Diff Summary**: `1 file changed, 18 insertions(+), 4 deletions(-)`
 - **Output Tail**:
 ```text
   ====================================================================
