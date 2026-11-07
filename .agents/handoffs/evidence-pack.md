@@ -11,15 +11,15 @@
 - Logged into `github.com` via `gh` CLI as `azen07508-debug` with `repo`, `workflow`, `gist` scopes.
 
 ## Runtime Verification Digest
-- **Command**: `python3 scripts/verify-handoff.py && python3 scripts/verify-code-slop.py scripts` (`[实测 Measured]` at `2026-11-07T15:24:04+08:00`)
-- **Exit Code & Digest**: `exit=0` | `sha256=2a8b5a5b836f`
-- **Git Diff Summary**: `1 file changed, 18 insertions(+), 4 deletions(-)`
+- **Command**: `python3 -m unittest discover -s tests -q && python3 scripts/verify-handoff.py && python3 scripts/verify-code-slop.py scripts` (`[实测 Measured]` at `2026-11-07T16:04:33+08:00`)
+- **Exit Code & Digest**: `exit=0` | `sha256=a9a70ac3d795`
+- **Git Diff Summary**: `15 files changed, 586 insertions(+), 103 deletions(-)`
 - **Output Tail**:
 ```text
   ====================================================================
-  ====================================================================
-  PSTACK COMMENT SICKO & CODE SLOP HARNESS (15 files, 1 custom rules)
-  ====================================================================
   STATUS : ALL CHECKS GREEN (0 redundant comments, swallowed exceptions, or custom rule hi
   ====================================================================
+  ----------------------------------------------------------------------
+  Ran 8 tests in 2.452s
+  OK
 ```

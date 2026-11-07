@@ -28,9 +28,10 @@ register_global_agents() {
   ln -sfn "$SOURCE_ROOT/scripts/pstack-correct.py" "$HOME/.local/bin/pstack-correct"
   ln -sfn "$SOURCE_ROOT/scripts/pstack-session.py" "$HOME/.local/bin/pstack-session"
   ln -sfn "$SOURCE_ROOT/scripts/pstack-onboard.py" "$HOME/.local/bin/pstack-onboard"
+  ln -sfn "$SOURCE_ROOT/scripts/pstack-bench.py" "$HOME/.local/bin/pstack-bench"
   ln -sfn "$SOURCE_ROOT/scripts/pstack_update.py" "$HOME/.local/bin/pstack-update"
   ln -sfn "$SOURCE_ROOT/scripts/ag-spawn.sh" "$HOME/.local/bin/ag-spawn"
-  echo "[OK] Linked global CLIs in $HOME/.local/bin (pstack, pstack-verify, pstack-correct, pstack-session, pstack-onboard, pstack-update, ag-spawn)"
+  echo "[OK] Linked global CLIs in $HOME/.local/bin (pstack, pstack-verify, pstack-correct, pstack-session, pstack-onboard, pstack-bench, pstack-update, ag-spawn)"
 
   local skill_targets=(
     "$HOME/.gemini/config/skills/pstack"

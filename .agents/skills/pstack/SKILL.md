@@ -38,8 +38,10 @@ Activate this skill whenever the user invokes `/pstack`, `/pstack-build`, `/psta
    - Run `pstack verify prep-verifier` to inspect the <= 20 line read-only digest (`active-brief.md`, `[Builder Restate]`, `Runtime Verification Digest`, and `git diff --stat`).
    - Write a 4-tier adversarial verdict (`ACT_ON`, `CONSIDER`, `NOTED`, `DISMISSED` + `VERDICT: PASS | REJECT`) to `.agents/handoffs/verifier-verdict.md`.
    - Run `pstack verify verdict` to validate the verdict and automatically export `.agents/handoffs/output-final.md` (with `> [Builder Restate]` stripped).
-4. **Zero-Token Offline Tooling (`/pstack-pickup`, `correct`, `onboard`, `update`)**:
-   - `pstack pause "<note>"` / `pstack pickup`: Generate and read `.agents/handoffs/session-snapshot.md` (<= 20 lines) for instant cross-session recovery.
+4. **Zero-Token Offline Tooling (`/pstack-pickup`, `correct`, `onboard`, `update`, `bench`, `test`)**:
+   - `pstack pause "<note>"` / `pstack pickup`: Generate and read `.agents/handoffs/session-snapshot.md` (<= 20 lines, with automatic crash log pointer recovery from `.agents/handoffs/logs/`).
+   - `pstack verify handoff --fix`: Validate line bounds (`1 <= start <= end <= total_lines`) and auto-heal drifted `file:start-end#symbol_name` pointers via AST/regex resolution.
    - `pstack correct --scan | --code-rule "<regex>" "<reason>" | --prose-ban "<phrase>"`: Promote lessons from `.agents/decision.tsv` into mechanical regex/prose rules.
-   - `pstack onboard --detect | --to-thread`: Auto-detect project `verify_cmd` or synthesize `active-brief.md` from recent Git commits and `decision.tsv`.
+   - `pstack onboard --detect [--profile strict|fast] | --to-thread`: Auto-detect chained `Test + Lint + Typecheck` project `verify_cmd` or synthesize `active-brief.md` from recent Git commits.
+   - `pstack bench [--live]` & `pstack test`: Run the standard library unit test suite (`tests/test_pstack_harness.py`) and 0-token reproducible benchmark (`benchmarks/latest-report.md`).
    - `pstack update [--check|--apply]` / `/pstack-update`: Check remote commit updates and fast-forward all 8 local agent mounts.

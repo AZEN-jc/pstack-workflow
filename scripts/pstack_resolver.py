@@ -34,7 +34,7 @@ verify_cmd: "pstack verify all"
 - [Init] 已初始化本地 `.agents/decision.tsv` 与 `.agents/handoffs/` 状态目录，静态规则自动回退至 `PSTACK_HOME`。
 
 ## 3. Evidence Pointers (Read-Only Context)
-- 核心调度协议：`.agents/pstack/pstack-core.md:1-48`
+- 核心调度协议：`.agents/pstack/pstack-core.md:1-27`
 - 实证决策账本：`.agents/decision.tsv:1-1`
 
 ## 4. Deliverable Contract

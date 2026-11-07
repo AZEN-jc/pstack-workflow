@@ -72,19 +72,25 @@ pstack pickup
 # 5. 远程同步：自动检查 GitHub 远端更新并全量刷新本机 8 路宿主挂载
 pstack update --check
 pstack update
+
+# 6. 可复现基准测试与符号指针自愈 (v2.1 Verifiable Harness)
+pstack test
+pstack bench
+pstack verify handoff --fix
 ```
 
 ---
 
 ## 5. 端到端验收契约 (Deliverable Verification)
 
-在仓库根目录依次执行以下 6 条命令，返回码均为 `0` 即代表 v2.0 升级完备 `[实测 Measured]`：
+在仓库根目录依次执行以下 7 条命令，返回码均为 `0` 即代表 v2.0/v2.1 升级完备 `[实测 Measured]`：
 
 ```bash
 ./scripts/bootstrap-repo.sh --global && pstack status
 wc -l .agents/pstack/pstack-core.md
-pstack pause "v2.0 upgrade complete" && pstack pickup
+pstack test && pstack bench
+pstack pause "v2.1 upgrade complete" && pstack pickup
 pstack correct --scan && pstack onboard --detect
-pstack verify all && pstack verify prep-verifier && pstack verify verdict
-python3 scripts/verify-prose.py README.md && python3 scripts/verify-prose.py UPGRADE_V2.md
+pstack verify handoff --fix && pstack verify all && pstack verify prep-verifier && pstack verify verdict
+python3 scripts/verify-prose.py README.md && python3 scripts/verify-prose.py README_ZH.md && python3 scripts/verify-prose.py UPGRADE_V2.md && python3 scripts/verify-prose.py benchmarks/latest-report.md
 ```

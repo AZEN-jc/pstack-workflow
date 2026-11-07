@@ -5,6 +5,7 @@ Usage:
   python3 scripts/pstack-session.py pause ["<progress_note>"]
   python3 scripts/pstack-session.py pickup
 """
+import json
 import re
 import subprocess
 import sys
@@ -71,12 +72,46 @@ def read_last_decisions(workspace_root: Path, count: int = 3) -> list[str]:
     return items or ["  - (no decision records)"]
 
 
+def read_last_spawn_status(workspace_root: Path) -> str | None:
+    logs_dir = workspace_root / ".agents" / "handoffs" / "logs"
+    if not logs_dir.is_dir():
+        return None
+
+    status_json = logs_dir / "last-spawn-status.json"
+    if status_json.exists():
+        try:
+            data = json.loads(status_json.read_text(encoding="utf-8"))
+            runner = data.get("runner", "unknown")
+            exit_code = int(data.get("exit_code", 0))
+            log_rel = data.get("log_file", ".agents/handoffs/logs/")
+            tail = str(data.get("tail", "")).strip()[:48]
+            label = "FAILED" if exit_code != 0 else "OK"
+            tail_suffix = f" ({tail})" if tail else ""
+            return f"- **Last Spawn Status**: `{label} (runner={runner}, exit={exit_code})` -> `{log_rel}`{tail_suffix}"
+        except (ValueError, OSError):
+            return None
+
+    log_files = sorted(logs_dir.glob("spawn-*.log"), key=lambda p: p.stat().st_mtime, reverse=True)
+    if not log_files:
+        return None
+
+    latest = log_files[0]
+    log_rel = f".agents/handoffs/logs/{latest.name}"
+    lines = [ln.strip() for ln in latest.read_text(encoding="utf-8", errors="ignore").splitlines() if ln.strip()]
+    tail = lines[-1][:48] if lines else "empty"
+    joined_tail = "\n".join(lines[-5:]).upper()
+    is_fail = any(tok in joined_tail for tok in ("FAIL", "ERROR", "TIMEOUT", "CRASH", "EXIT="))
+    label = "FAILED" if is_fail else "LOGGED"
+    return f"- **Last Spawn Status**: `{label}` -> `{log_rel}` ({tail})"
+
+
 def generate_snapshot(workspace_root: Path, note: str = "") -> Path:
     ensure_workspace_skeleton(workspace_root)
     ts = datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
     branch, status_summary, modified_files = read_git_summary(workspace_root)
     task_id, role, verify_cmd = read_brief_meta(workspace_root)
     decisions = read_last_decisions(workspace_root, 3)
+    spawn_line = read_last_spawn_status(workspace_root)
     clean_note = note.strip() or "Ready for stateless pickup (`[实测 Measured]`)"
 
     snapshot_lines = [
@@ -85,10 +120,16 @@ def generate_snapshot(workspace_root: Path, note: str = "") -> Path:
         f"- **Workspace & Branch**: `{workspace_root.name}` on `{branch}` ({status_summary})",
         f"- **Touched Pointers**: `{modified_files}`",
         f"- **Active Brief**: `task_id={task_id}` | `role={role}` | `verify_cmd={verify_cmd}`",
-        "- **Recent Empirical Decisions (`.agents/decision.tsv`)**:",
-        *decisions[:3],
-        "- **Resume Action**: Read `.agents/handoffs/active-brief.md` and run `pstack verify all`.",
     ]
+    if spawn_line:
+        snapshot_lines.append(spawn_line)
+    snapshot_lines.extend(
+        [
+            "- **Recent Empirical Decisions (`.agents/decision.tsv`)**:",
+            *decisions[:3],
+            "- **Resume Action**: Read `.agents/handoffs/active-brief.md` and run `pstack verify all`.",
+        ]
+    )
     bounded = "\n".join(snapshot_lines[:20]) + "\n"
     snap_path = workspace_root / ".agents" / "handoffs" / "session-snapshot.md"
     snap_path.parent.mkdir(parents=True, exist_ok=True)

@@ -58,8 +58,15 @@ case "$SUBCMD" in
   ban)
     exec python3 "$SCRIPT_DIR/pstack-verify.py" ban "$@"
     ;;
+  bench)
+    exec python3 "$SCRIPT_DIR/pstack-bench.py" "$@"
+    ;;
+  test)
+    PSTACK_HOME_DIR="$(python3 "$SCRIPT_DIR/pstack_resolver.py" --pstack-home)"
+    exec python3 -m unittest discover -s "$PSTACK_HOME_DIR/tests" -q "$@"
+    ;;
   *)
-    echo "Usage: pstack <init|status|path|verify|correct|pause|pickup|onboard|export|update|check-update|spawn|log|ban> [args...]"
+    echo "Usage: pstack <init|status|path|verify|correct|pause|pickup|onboard|export|update|check-update|spawn|log|ban|bench|test> [args...]"
     exit 2
     ;;
 esac

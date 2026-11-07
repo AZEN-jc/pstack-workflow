@@ -258,12 +258,14 @@ def main() -> int:
         return run_step([sys.executable, str(scripts_dir / "verify-prose.py"), target, *extra])
 
     if mode == "handoff":
-        target = (
-            sys.argv[2]
-            if len(sys.argv) > 2
-            else str(resolve_asset(".agents/handoffs/active-brief.md", workspace_root))
-        )
-        return run_step([sys.executable, str(scripts_dir / "verify-handoff.py"), target])
+        raw_args = sys.argv[2:]
+        if raw_args and not raw_args[0].startswith("--"):
+            target = raw_args[0]
+            extra = raw_args[1:]
+        else:
+            target = str(resolve_asset(".agents/handoffs/active-brief.md", workspace_root))
+            extra = raw_args
+        return run_step([sys.executable, str(scripts_dir / "verify-handoff.py"), target, *extra])
 
     if mode == "code":
         if len(sys.argv) > 2:
@@ -303,7 +305,7 @@ def main() -> int:
             if workspace_root != pstack_home
             else [str(scripts_dir)]
         )
-        rc1 = run_step([sys.executable, str(scripts_dir / "verify-handoff.py"), str(brief_target)])
+        rc1 = run_step([sys.executable, str(scripts_dir / "verify-handoff.py"), str(brief_target), "--fix"])
         rc2 = run_step([sys.executable, str(scripts_dir / "verify-prose.py"), str(draft_target)])
         rc3 = run_step([sys.executable, str(scripts_dir / "verify-code-slop.py"), *code_targets])
         rc4 = execute_verify_cmd(brief_target, workspace_root)

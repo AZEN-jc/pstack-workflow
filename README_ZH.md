@@ -140,7 +140,14 @@ pstack pickup
 # 远程更新检查与自更新同步
 pstack update --check
 pstack update
+
+# 运行标准库单元测试套件与 0 Token 可复现基准测试 (生成 benchmarks/latest-report.md)
+pstack test
+pstack bench
+pstack verify handoff --fix
 ```
+
+完整的上下文压缩比与 12 组变异样本 100% 拦截实测数据请参阅 [benchmarks/latest-report.md](./benchmarks/latest-report.md) [实测 Measured]。
 
 ### 终端四重门禁运行样张
 
@@ -148,7 +155,7 @@ pstack update
 ====================================================================
 PSTACK v2.0 FOUR-GATE VERIFICATION SUITE
 ====================================================================
-[1/4] Handoff Brief Check   : .agents/handoffs/active-brief.md -> PASS (Schema V2 valid)
+[1/4] Handoff Brief Check   : .agents/handoffs/active-brief.md -> PASS (Schema V2 + Symbol Auto-Heal)
 [2/4] Prose & Restate Check : .agents/handoffs/output-draft.md -> PASS (Builder Restate + 0 slop)
 [3/4] Comment Sicko & Rules : scripts/ (1 custom rule)         -> PASS (0 violations)
 [4/4] Runtime verify_cmd    : exit=0, sha256=1aefa2e6acf7      -> PASS (evidence-pack.md updated)
@@ -161,18 +168,20 @@ STATUS : ALL 4 HARNESS GATES GREEN (Return Code: 0)
 
 ## 6. 目录拓扑 (Repository Topology)
 
-完整 v2.0 升级规范请参阅 [UPGRADE_V2.md](./UPGRADE_V2.md)。
+完整 v2.0/v2.1 升级规范请参阅 [UPGRADE_V2.md](./UPGRADE_V2.md)。
 
 ```text
 .
 ├── AGENTS.md                        # Antigravity / Codex / OpenCode / Cursor / Pi 极简入口
 ├── CLAUDE.md                        # Claude Code 自动加载入口
-├── UPGRADE_V2.md                    # Pstack v2.0 桌面端双角色隔离与升级规范文档
+├── UPGRADE_V2.md                    # Pstack v2.0/v2.1 桌面端双角色隔离与可验证工程规范
+├── benchmarks/                      # 可复现基准测试报告 (latest-report.md, latest-metrics.json)
+├── tests/                           # 标准库单元测试套件 (test_pstack_harness.py)
 ├── .cursor/rules/pstack.mdc         # Cursor IDE 自动加载规则
-├── adapters/opencode/commands/      # OpenCode 全局斜杠命令 (/pstack-build, /pstack-verify, /pstack-pickup 等)
+├── adapters/opencode/commands/      # OpenCode 全局斜杠命令 (/pstack-build, /pstack-verify, /pstack-bench 等)
 ├── .agents/
 │   ├── decision.tsv                 # 实证决策与踩坑回滚账本 (动态工作区状态)
-│   ├── handoffs/                    # 交接区 (active-brief, evidence-pack, output-draft/final, verifier-verdict, session-snapshot)
+│   ├── handoffs/                    # 交接区 (active-brief, evidence-pack, output-draft/final, verifier-verdict, logs/)
 │   ├── pstack/                      # 静态母版资产库 (通过 ~/.config/pstack/home 全局层叠回退)
 │   │   ├── pstack-core.md           # Tier 0 主控调度内核 (严格 ≤ 48 行)
 │   │   ├── custom-banned-phrases.txt# /correct 动态追加散文禁用词库
@@ -181,17 +190,18 @@ STATUS : ALL 4 HARNESS GATES GREEN (Return Code: 0)
 │   │   └── principles/              # 5 大底层铁律 (Unslop, No-Comments, Prove-It-Works 等)
 │   └── skills/pstack/SKILL.md       # 8 路宿主通用 Skill 定义
 └── scripts/
-    ├── pstack                       # 全局统一 CLI (init|status|path|verify|correct|pause|pickup|onboard|update)
+    ├── pstack                       # 全局统一 CLI (init|status|verify|correct|pause|pickup|onboard|bench|test|update)
     ├── pstack_resolver.py           # PSTACK_HOME 与 WORKSPACE_ROOT 自发现及层叠解析器
+    ├── pstack_bench.py              # 可复现上下文压缩比与 12 组变异样本拦截基准测试套件
     ├── pstack_update.py             # 远程 Git 更新检查与跨 Agent 自同步工具
     ├── pstack-verify.py             # 四重门禁总控、Verifier 摘要与裁决校验器
     ├── pstack-correct.py            # 五层纠错扫描与自定义代码/散文规则下沉工具
-    ├── pstack-session.py            # ≤ 20 行跨窗口断点快照 (pause / pickup) 工具
-    ├── pstack-onboard.py            # 项目验证命令探测与 Git Commit 转推文 Brief 生成器
+    ├── pstack-session.py            # ≤ 20 行跨窗口断点快照 (pause / pickup + 崩溃日志恢复)
+    ├── pstack-onboard.py            # 组合质量门禁探测与 Git Commit 转推文 Brief 生成器
     ├── verify-prose.py              # 中英双语 Unslop 散文与 [Builder Restate] 校验器
     ├── verify-code-slop.py          # Comment Sicko 与 custom-code-rules.tsv 校验器
-    ├── verify-handoff.py            # 子 Agent 交接单防膨胀校验器
+    ├── verify-handoff.py            # 交接单行号边界校验与 AST #symbol 漂移自愈器
     ├── log-decision.py              # decision.tsv 实证入账工具
-    ├── ag-spawn.sh                  # 跨 CLI 与桌面端宿主派发器
+    ├── ag-spawn.sh                  # 带超时保护与崩溃自动快照的跨宿主派发器
     └── bootstrap-repo.sh            # 8 路宿主全局安装与跨仓库注入脚本
 ```

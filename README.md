@@ -141,7 +141,14 @@ pstack pickup
 # Automated remote update check and self-update
 pstack update --check
 pstack update
+
+# Run unit tests and 0-token reproducible benchmark (outputs benchmarks/latest-report.md)
+pstack test
+pstack bench
+pstack verify handoff --fix
 ```
+
+See [benchmarks/latest-report.md](./benchmarks/latest-report.md) for full benchmark metrics [Measured].
 
 ### Terminal 4-Gate Output Sample
 
@@ -149,7 +156,7 @@ pstack update
 ====================================================================
 PSTACK v2.0 FOUR-GATE VERIFICATION SUITE
 ====================================================================
-[1/4] Handoff Brief Check   : .agents/handoffs/active-brief.md -> PASS (Schema V2 valid)
+[1/4] Handoff Brief Check   : .agents/handoffs/active-brief.md -> PASS (Schema V2 + Symbol Auto-Heal)
 [2/4] Prose & Restate Check : .agents/handoffs/output-draft.md -> PASS (Builder Restate + 0 slop)
 [3/4] Comment Sicko & Rules : scripts/ (1 custom rule)         -> PASS (0 violations)
 [4/4] Runtime verify_cmd    : exit=0, sha256=1aefa2e6acf7      -> PASS (evidence-pack.md updated)
@@ -162,18 +169,20 @@ STATUS : ALL 4 HARNESS GATES GREEN (Return Code: 0)
 
 ## 6. Repository Topology
 
-See [UPGRADE_V2.md](./UPGRADE_V2.md) for full v2.0 specifications.
+See [UPGRADE_V2.md](./UPGRADE_V2.md) for full v2.0/v2.1 specifications.
 
 ```text
 .
 ├── AGENTS.md                        # Antigravity / Codex / OpenCode / Cursor / Pi entry
 ├── CLAUDE.md                        # Claude Code entry
-├── UPGRADE_V2.md                    # Pstack v2.0 dual-role isolation and upgrade specs
+├── UPGRADE_V2.md                    # Pstack v2.0/v2.1 dual-role isolation and upgrade specs
+├── benchmarks/                      # Reproducible benchmark reports (latest-report.md, latest-metrics.json)
+├── tests/                           # Standard library unit test suite (test_pstack_harness.py)
 ├── .cursor/rules/pstack.mdc         # Cursor IDE rules
-├── adapters/opencode/commands/      # OpenCode slash commands (/pstack-build, /pstack-verify, etc.)
+├── adapters/opencode/commands/      # OpenCode slash commands (/pstack-build, /pstack-verify, /pstack-bench)
 ├── .agents/
 │   ├── decision.tsv                 # Empirical decision and rollback ledger (runtime state)
-│   ├── handoffs/                    # Handoff zone (active-brief, evidence-pack, drafts, verdict)
+│   ├── handoffs/                    # Handoff zone (active-brief, evidence-pack, drafts, verdict, logs/)
 │   ├── pstack/                      # Static template repository (fallback via ~/.config/pstack/home)
 │   │   ├── pstack-core.md           # Tier 0 coordinator kernel (strictly <= 48 lines)
 │   │   ├── custom-banned-phrases.txt# Dynamic prose ban list managed via /correct
@@ -182,17 +191,18 @@ See [UPGRADE_V2.md](./UPGRADE_V2.md) for full v2.0 specifications.
 │   │   └── principles/              # 5 core principles (Unslop, No-Comments, Prove-It-Works)
 │   └── skills/pstack/SKILL.md       # Universal skill definition across 8 hosts
 └── scripts/
-    ├── pstack                       # Unified CLI (init|status|path|verify|correct|pause|pickup|onboard|update)
+    ├── pstack                       # Unified CLI (init|status|verify|correct|pause|pickup|onboard|bench|test|update)
     ├── pstack_resolver.py           # PSTACK_HOME and WORKSPACE_ROOT overlay resolver
+    ├── pstack_bench.py              # Reproducible compression and 12-case adversarial mutation benchmark
     ├── pstack_update.py             # Remote Git update checker and self-updater
     ├── pstack-verify.py             # 4-gate harness suite and verifier verdict evaluator
     ├── pstack-correct.py            # 5-tier correction scanner and rule injection tool
-    ├── pstack-session.py            # <= 20-line cross-session snapshot (pause / pickup) tool
-    ├── pstack-onboard.py            # Test command detector and Git commit-to-brief generator
+    ├── pstack-session.py            # <= 20-line cross-session snapshot (pause / pickup + crash recovery)
+    ├── pstack-onboard.py            # Composite toolchain detector and Git commit-to-brief generator
     ├── verify-prose.py              # Bilingual unslop prose and [Builder Restate] validator
     ├── verify-code-slop.py          # Comment Sicko and custom-code-rules.tsv validator
-    ├── verify-handoff.py            # Subagent handoff anti-bloat validator
+    ├── verify-handoff.py            # Subagent handoff bounds and AST #symbol auto-heal validator
     ├── log-decision.py              # Ledger logging tool for decision.tsv
-    ├── ag-spawn.sh                  # Cross-CLI and desktop host launcher
+    ├── ag-spawn.sh                  # Resilient cross-CLI launcher with timeout and crash trap
     └── bootstrap-repo.sh            # Global 8-host installer and project injector
 ```

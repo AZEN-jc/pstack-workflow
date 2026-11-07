@@ -1,0 +1,120 @@
+{
+  "version": "2.1",
+  "elapsed_seconds": 0.25,
+  "context_compression": {
+    "naive_full_stuffing": {
+      "files_count": 17,
+      "lines": 1752,
+      "bytes": 83942,
+      "tokens_est": 15786
+    },
+    "pstack_tier0_core": {
+      "lines": 27,
+      "budget_limit_lines": 48,
+      "tokens_est": 757
+    },
+    "pstack_tier0_plus_tier1_brief": {
+      "lines": 61,
+      "bytes": 6390,
+      "tokens_est": 1219,
+      "token_reduction_pct": 92.3
+    },
+    "pstack_tier2_session_pickup": {
+      "lines": 8,
+      "budget_limit_lines": 20,
+      "tokens_est": 101,
+      "token_reduction_pct": 99.4
+    }
+  },
+  "mutation_suite": {
+    "passed": 12,
+    "total": 12,
+    "interception_rate_pct": 100.0,
+    "cases": [
+      {
+        "id": "M01",
+        "gate": "Gate 1 (Handoff)",
+        "mutation": "Inline code block > 15 lines (20 lines)",
+        "expected": "[Anti-Context-Stuffing]",
+        "intercepted": true
+      },
+      {
+        "id": "M02",
+        "gate": "Gate 1 (Pointer Bounds)",
+        "mutation": "Out-of-bounds line range sample.py:1-99 (7 lines total)",
+        "expected": "[Out-of-Bounds Pointer]",
+        "intercepted": true
+      },
+      {
+        "id": "M03",
+        "gate": "Gate 1 (Symbol Auto-Heal)",
+        "mutation": "Drifted symbol range sample.py:1-2#compute_total",
+        "expected": "Auto-healed to sample.py:6-7#compute_total",
+        "intercepted": true
+      },
+      {
+        "id": "M04",
+        "gate": "Gate 1 (Symbol Anchor)",
+        "mutation": "Dangling symbol anchor #non_existent_symbol",
+        "expected": "[Broken Symbol Pointer]",
+        "intercepted": true
+      },
+      {
+        "id": "M05",
+        "gate": "Gate 2 (Prose Restate)",
+        "mutation": "output-draft.md missing top > [Builder Restate]",
+        "expected": "[Builder Restate Missing]",
+        "intercepted": true
+      },
+      {
+        "id": "M06",
+        "gate": "Gate 2 (Prose Unslop)",
+        "mutation": "Prose containing em-dash and banned ZH slop phrase",
+        "expected": "[Dash Ban] & [Slop Phrase ZH]",
+        "intercepted": true
+      },
+      {
+        "id": "M07",
+        "gate": "Gate 2 (Sentence Budget)",
+        "mutation": "Single Chinese sentence exceeding 45 chars",
+        "expected": "[Sentence Too Long ZH]",
+        "intercepted": true
+      },
+      {
+        "id": "M08",
+        "gate": "Gate 2 (Syntax & Epistemic)",
+        "mutation": "Mid-sentence colon + missing epistemic tag",
+        "expected": "[Mid-Sentence Colon Ban] & [Epistemic Gate]",
+        "intercepted": true
+      },
+      {
+        "id": "M09",
+        "gate": "Gate 3 (Comment Sicko)",
+        "mutation": "Redundant AI comment restating code behavior",
+        "expected": "[Comment Sicko]",
+        "intercepted": true
+      },
+      {
+        "id": "M10",
+        "gate": "Gate 3 (Exception Hygiene)",
+        "mutation": "Silent swallowed exception block",
+        "expected": "[Swallowed Exception]",
+        "intercepted": true
+      },
+      {
+        "id": "M11",
+        "gate": "Gate 3 (Custom Regex Rule)",
+        "mutation": "Violation of promoted custom-code-rules.tsv regex",
+        "expected": "[Custom Rule:no-debug-leak]",
+        "intercepted": true
+      },
+      {
+        "id": "M12",
+        "gate": "Gate 4 + Independent Verdict",
+        "mutation": "Failing verify_cmd (exit=3) & VERDICT: REJECT",
+        "expected": "Non-zero gate rejection",
+        "intercepted": true
+      }
+    ]
+  }
+}
