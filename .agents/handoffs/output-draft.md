@@ -1,3 +1,7 @@
+> [Builder Restate] 目标是向硬核工程读者交付 8 连发技术串推，拆解无状态指针交接如何根治多轮坍缩。
+> 前提与痛点是旧子会话恢复与大段源码粘贴导致 62% 边界遗忘率与 19% 幻觉率。
+> 最小动作是绑定 `.agents/decision.tsv` 实测数据并通过 `verify-prose.py` 门禁校验。
+
 # X Tech Thread: 为什么你的 Agent 越改越蠢（以及 Pstack 的工程解法）
 
 ## 1/8

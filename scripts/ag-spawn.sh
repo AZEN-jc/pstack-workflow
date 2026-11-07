@@ -8,7 +8,7 @@ ARG1="${1:-}"
 ARG2="${2:-}"
 
 case "$ARG1" in
-  opencode|codex|codex-review|claude|antigravity|agy|dry-run)
+  opencode|codex|codex-review|workbuddy|pi|claude|antigravity|agy|dry-run)
     BRIEF_INPUT="$WORKSPACE_ROOT/.agents/handoffs/active-brief.md"
     RUNNER="$ARG1"
     ;;
@@ -58,13 +58,25 @@ case "$RUNNER" in
   antigravity|agy)
     agy -p "$PROMPT" --mode accept-edits
     ;;
+  pi)
+    if command -v pi >/dev/null 2>&1; then
+      pi -p "$PROMPT"
+    else
+      python3 "$SCRIPT_DIR/pstack-verify.py" prep-verifier
+      echo "[Desktop Handoff: Pi] Open a new tab in Pi and run: /pstack-build or /pstack-verify"
+    fi
+    ;;
+  workbuddy)
+    python3 "$SCRIPT_DIR/pstack-verify.py" prep-verifier
+    echo "[Desktop Handoff: WorkBuddy] Open a new tab in WorkBuddy and run: /pstack-build or /pstack-verify"
+    ;;
   dry-run)
     echo "[DRY-RUN] Verified brief successfully. Ready to dispatch prompt:"
     echo "  Runner : $RUNNER"
     echo "  Prompt : $PROMPT"
     ;;
   *)
-    echo "[Error] Unknown runner: $RUNNER (supported: opencode | codex | codex-review | claude | agy | dry-run)"
+    echo "[Error] Unknown runner: $RUNNER (supported: opencode | codex | codex-review | workbuddy | pi | claude | agy | dry-run)"
     exit 1
     ;;
 esac

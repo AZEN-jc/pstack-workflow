@@ -9,6 +9,10 @@ case "$SUBCMD" in
   init)
     TARGET_DIR="${1:-.}"
     INIT_MODE="${2:-light}"
+    if [[ "$TARGET_DIR" == "--light" || "$TARGET_DIR" == "--full" || "$TARGET_DIR" == "--symlink" ]]; then
+      INIT_MODE="$TARGET_DIR"
+      TARGET_DIR="${2:-.}"
+    fi
     exec "$SCRIPT_DIR/bootstrap-repo.sh" "$TARGET_DIR" "$INIT_MODE"
     ;;
   status|--status)
@@ -22,6 +26,21 @@ case "$SUBCMD" in
     shift || true
     exec python3 "$SCRIPT_DIR/pstack-verify.py" "$VERIFY_MODE" "$@"
     ;;
+  correct)
+    exec python3 "$SCRIPT_DIR/pstack-correct.py" "$@"
+    ;;
+  pause)
+    exec python3 "$SCRIPT_DIR/pstack-session.py" pause "$@"
+    ;;
+  pickup)
+    exec python3 "$SCRIPT_DIR/pstack-session.py" pickup "$@"
+    ;;
+  onboard)
+    exec python3 "$SCRIPT_DIR/pstack-onboard.py" "$@"
+    ;;
+  export)
+    exec python3 "$SCRIPT_DIR/pstack-verify.py" export "$@"
+    ;;
   spawn)
     exec "$SCRIPT_DIR/ag-spawn.sh" "$@"
     ;;
@@ -34,7 +53,7 @@ case "$SUBCMD" in
     exec python3 "$SCRIPT_DIR/pstack-verify.py" ban "$@"
     ;;
   *)
-    echo "Usage: pstack <init|status|path|verify|spawn|log|ban> [args...]"
+    echo "Usage: pstack <init|status|path|verify|correct|pause|pickup|onboard|export|spawn|log|ban> [args...]"
     exit 2
     ;;
 esac

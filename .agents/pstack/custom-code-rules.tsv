@@ -1,0 +1,2 @@
+rule_id	pattern	reason
+no-bare-print-debug	^\s*print\(["']DEBUG	禁止遗留临时 DEBUG print 语句

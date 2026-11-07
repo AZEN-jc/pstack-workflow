@@ -1,169 +1,160 @@
-# Pstack: Protocol Stack Multi-Agent Harness
+# Pstack v2.0: Protocol Stack Multi-Agent Harness
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Architecture-Dual--Engine_Harness-2563EB?style=flat-square" alt="Architecture" />
-  <img src="https://img.shields.io/badge/Discipline-Deterministic_Coordination-7C3AED?style=flat-square" alt="Discipline" />
-  <img src="https://img.shields.io/badge/Verification-0_Slop_%7C_Zero_Sycophancy-10B981?style=flat-square" alt="Verification" />
+  <img src="https://img.shields.io/badge/Architecture-Dual--Tab_v2.0_Harness-2563EB?style=flat-square" alt="Architecture" />
+  <img src="https://img.shields.io/badge/Context_Budget-Tier_0_%E2%89%A4_48_Lines-7C3AED?style=flat-square" alt="Context Budget" />
+  <img src="https://img.shields.io/badge/Verification-4_Deterministic_Gates-10B981?style=flat-square" alt="Verification" />
 </p>
 
 <p align="center">
-  <a href="https://github.com/AZEN-jc/pstack-workflow"><img src="https://img.shields.io/badge/Ecosystem-6_Agents_Native-06B6D4?style=flat-square" alt="Ecosystem" /></a>
+  <a href="https://github.com/AZEN-jc/pstack-workflow"><img src="https://img.shields.io/badge/Ecosystem-8_Local_Hosts_Mounted-06B6D4?style=flat-square" alt="Ecosystem" /></a>
   <a href="https://github.com/AZEN-jc/pstack-workflow"><img src="https://img.shields.io/badge/Handoff-Pointer--Only_(15_Lines_Max)-F97316?style=flat-square" alt="Handoff" /></a>
-  <a href="https://github.com/AZEN-jc/pstack-workflow"><img src="https://img.shields.io/badge/Gates-3_Deterministic_Checkers-E11D48?style=flat-square" alt="Gates" /></a>
+  <a href="https://github.com/AZEN-jc/pstack-workflow"><img src="https://img.shields.io/badge/Session_Snapshot-%E2%89%A4_20_Lines_Pickup-E11D48?style=flat-square" alt="Snapshot" /></a>
 </p>
 
 > Autonomous protocol stack harness for multi-agent workspaces.
 > Left unconstrained, coding agents hallucinate imports and invent verbose conversational filler.
 > They paste 500-line diffs across broken paths before anyone notices syntax failures.
-> Pstack replaces conversational trust with mechanical verification gates [Measured].
-> Immutable playbooks stay separated from mutable repository state.
+> Pstack v2.0 replaces conversational trust with 4 mechanical verification gates [Measured].
+> Builder and Independent Verifier tabs stay strictly isolated across 8 local hosts.
 
 > 面向多智能体协作工作区的协议栈级确定性工程约束体系。
 > 放任自流的编程智能体会发明大量冗长客套的废话。
 > 它们在耗尽上下文窗口前，在错误路径上堆砌无法编译的补丁。
-> Pstack 以三重自动化物理门禁替代脆弱的人性信任 [推导 Inferred]。
+> Pstack v2.0 以四重自动化物理门禁与双标签页角色隔离替代脆弱的人性信任 [推导 Inferred]。
 > 静态母版库与易变的业务仓库彻底物理隔离。
 
 ---
 
-## 1. 通俗原理解析：一分钟看懂 Pstack (ELI5: What is Pstack?)
+## 1. 通俗原理解析：一分钟看懂 Pstack v2.0 (ELI5: What is Pstack?)
 
 > **小白一分钟人话版 (TL;DR for Humans)**  
 > 传统多 Agent 协作像几个新手在群聊里互相应酬客套。它们动辄刷屏几百行代码，导致上下文迅速挤爆并频繁报错。  
-> Pstack 把它重构为工业级协议栈约束。主从协作禁止任何客套。任务派发只传行号范围指针。交付产物必须通过三重自动化脚本检验。
+> Pstack v2.0 把它重构为工业级协议栈约束。常驻内核控制在 48 行以内。任务派发只传行号范围指针。桌面端双 Tab 分别承担构建与独立盲审，交付产物必须通过四重脚本检验。
 
 日常使用 AI 编程时，最常遇到的挫败并非模型能力不足，而是缺乏工程纪律。
 
-| 典型翻车场景 | 传统多 Agent 协作方式 | Pstack 协议栈确定性解法 | 终态实测收益 [实测 Measured] |
+| 典型翻车场景 | 传统多 Agent 协作方式 | Pstack v2.0 确定性解法 | 终态实测收益 [实测 Measured] |
 | :--- | :--- | :--- | :--- |
-| **满屏客套挤爆窗口** | 互相吹捧并大量输出“好的我来为您实现”，挤占宝贵上下文。 | **三行直入主题**。首句强制输出目标、痛点与最小动作，禁止任何寒暄客套。 | 上下文信噪比大幅提升 |
-| **代码大爆炸与坏味道** | 一次性甩出数百行巨额补丁，引入大量冗余注释与隐藏语法破坏。 | **指针交接单**。主从协作仅传 `file:start-end` 范围指针，严禁大段贴源码。 | 边界精准，杜绝盲目改写 |
-| **跨项目规则频繁断链** | 每次新建项目都要重新复制提示词，规则散落且版本极难同步。 | **双引擎三层自发现**。静态全局母版与业务工作区物理分离，按需层叠解析。 | 任意仓库直接 `pstack init` |
-| **人工肉眼检查防不胜防** | 开发者耗费大量精力逐行肉眼排查虚假注释、AI 腔与未捕获异常。 | **三重机械自动化门禁**。交接单格式、文本除油与代码洁癖检测器卡死返回码。 | 门禁不全绿不准交付产物 |
-
-### 三大工程公理 (Core Axioms)
-
-- **只传指针不塞原文**。主从任务派发仅传递行号范围，绝不冗余搬运大段源码。
-- **动态状态与静态母版解耦**。业务代码随时更迭，但工程铁律与执行剧本保持全局固化。
-- **机械门禁胜过口头嘱咐**。不依赖提示词里的口头叮嘱，以返回码拦截所有不合格产出。
+| **满屏客套挤爆窗口** | 互相吹捧并大量输出寒暄废话，长提示词挤占宝贵上下文。 | **Tier 0 极简内核 (≤48行)**。首句强制三行直入主题，草稿顶部强制 3 行复述头。 | 常驻上下文压缩至 ~450 Tokens |
+| **代码大爆炸与坏味道** | 一次性甩出数百行巨额补丁，引入冗余注释与隐藏语法破坏。 | **指针交接单**。主从协作仅传 `file:start-end` 范围指针，严禁贴超 15 行源码。 | 单次交接降至 620 Tokens |
+| **既当运动员又当裁判** | 同一个窗口写完代码自己夸自己通过，测试根本没跑或静默失败。 | **Gate 4 运行时摘要 + 双 Tab 盲审**。自动跑 `verify_cmd` 落盘 SHA256，新 Tab 四级裁决。 | 彻底杜绝口头谎报验证通过 |
+| **跨天恢复靠翻聊天记录** | 换个窗口就要重贴几千行历史，或者把同一错误反复犯十次。 | **零 Token 离线工具链**。`pause/pickup` 生成 ≤20 行快照，`correct` 自动下沉正则禁令。 | ~150 Tokens 瞬间恢复完整状态 |
 
 ---
 
-## 2. 核心架构与三层自发现 (Core Architecture)
+## 2. 核心架构：三级上下文预算与双 Tab 隔离 (Core Architecture)
 
 调用者在任意外部仓库运行 `pstack` 时无需手工复制剧本。系统通过静态母版库与动态工作区解耦实现零断链运行 [实测 Measured]。
 
 ```text
-                      +---------------------------------------+
-                      |         Developer / Terminal          |
-                      +---------------------------------------+
-                                          |
-                                    pstack init / verify
-                                          v
-                      +---------------------------------------+
-                      |       pstack_resolver.py (3层解析)     |
-                      +---------------------------------------+
-                                    /           \
-           Overlay Fallback        /             \   Local Workspace
-                                  v               v
-            +--------------------------+    +--------------------------+
-            | PSTACK_HOME (全局母版)   |    | WORKSPACE_ROOT (业务项目)|
-            |  ~/.config/pstack/home   |    |  /path/to/any/repo       |
-            +--------------------------+    +--------------------------+
-            | - pstack-core.md (主控)  |    | - .agents/decision.tsv   |
-            | - playbooks/ (6大剧本)   |    | - .agents/handoffs/      |
-            | - principles/ (铁律)     |    |   * active-brief.md      |
-            | - verification harnesses |    |   * evidence-pack.md     |
-            +--------------------------+    +--------------------------+
+                       +---------------------------------------+
+                       |  Desktop Host (Tab 1 Builder / Tab 2) |
+                       +---------------------------------------+
+                                           |
+                        /pstack-build -> verify all -> /pstack-verify
+                                           v
+                       +---------------------------------------+
+                       |       pstack_resolver.py (3层解析)     |
+                       +---------------------------------------+
+                                     /           \
+            Overlay Fallback        /             \   Local Workspace
+                                   v               v
+             +--------------------------+    +--------------------------+
+             | PSTACK_HOME (全局母版)   |    | WORKSPACE_ROOT (业务项目)|
+             |  ~/.config/pstack/home   |    |  /path/to/any/repo       |
+             +--------------------------+    +--------------------------+
+             | - pstack-core.md (≤48行) |    | - .agents/decision.tsv   |
+             | - playbooks/ (6大剧本)   |    | - .agents/handoffs/      |
+             | - custom-code-rules.tsv  |    |   * active-brief.md      |
+             | - 4-gate harnesses       |    |   * evidence-pack.md     |
+             | - correct/session/onboard|    |   * output-draft/final   |
+             +--------------------------+    +--------------------------+
 ```
 
-- **4 行极简入口 (`AGENTS.md` / `CLAUDE.md` / `.cursor/rules/pstack.mdc`)**：砍掉冗长提示词，强制所有 Agent 首步读取 `.agents/pstack/pstack-core.md`。
-- **三层路径自发现 (`scripts/pstack_resolver.py`)**：自动分离静态母版库 `PSTACK_HOME` (`~/.config/pstack/home`) 与当前业务工作区 `WORKSPACE_ROOT`。
-- **层叠资产解析 (`Overlay Asset Lookup`)**：外部轻量工作区仅保留 `.agents/decision.tsv` 与 `handoffs/`，静态剧本与原则自动回退至全局母版 [实测 Measured]。
-- **只传指针不塞原文 (`Pointer-Only Handoff`)**：主从交接单 `.agents/handoffs/active-brief.md` 仅允许传递 `file:start-end` 行号指针，严禁粘贴超过 15 行源码。
-- **三重确定性门禁 (`Deterministic Harnesses`)**：交付前必须通过交接单检查、零 AI 腔散文检查与 `Comment Sicko` 代码注释检查 [实测 Measured]。
+- **Tier 0 常驻路由层 (`pstack-core.md` ≤ 48 行)**：极简 3 行入口强制所有宿主首步读取 `.agents/pstack/pstack-core.md` [实测 Measured]。
+- **Tier 1 双区证据包 (`evidence-pack.md`)**：同时保留静态代码行号指针与 Gate 4 自动生成的 `## Runtime Verification Digest`（含退出码、12 位 SHA256 与末尾 10 行输出）[实测 Measured]。
+- **桌面端同宿主双 Tab 闭环**：Tab 1 运行 `/pstack-build` 完成构建与四重门禁；同宿主新建空白 Tab 2 运行 `/pstack-verify`，输出 `ACT_ON / CONSIDER / NOTED / DISMISSED` 四级裁决并自动导出剥离复述头的 `.agents/handoffs/output-final.md` [实测 Measured]。
+- **Tier 2 零 Token 离线工具链 (`correct / pause / pickup / onboard`)**：平时消耗 0 Token，触发时输出严格控制在 20 行以内 [实测 Measured]。
 
 ---
 
-## 3. 本机 6 大 Agent 与全局 CLI 挂载矩阵 (Universal Matrix)
+## 3. 本机 8 大宿主与全局 CLI 挂载矩阵 (8-Host Matrix)
 
-运行一次安装脚本即可在本机 6 大 Agent 环境与 `~/.local/bin` 中同步激活 `pstack` [实测 Measured]。
+运行一次安装脚本即可在本机 8 大 Agent 宿主目录与 `~/.local/bin` 中同步激活 `pstack` [实测 Measured]。
 
 | 挂载目标 | 全局挂载路径 | 项目级自动入口 | 核心定位 |
 | :--- | :--- | :--- | :--- |
 | **Global Anchor (`PSTACK_HOME`)** | `~/.config/pstack/home` | 供 `pstack_resolver.py` 层叠回退 | 静态剧本母版 |
 | **Global CLI (`$PATH`)** | `~/.local/bin/{pstack,pstack-verify,ag-spawn}` | 任意目录直接运行 `pstack` | 统一命令行 |
-| **Antigravity (`agy`)** | `~/.gemini/config/skills/pstack` | `AGENTS.md` + `.agents/skills/pstack/SKILL.md` | 双引擎协同 |
+| **Antigravity (`agy`)** | `~/.gemini/config/skills/pstack` | `AGENTS.md` + `SKILL.md` | 原生子进程协同 |
 | **Claude Code (`claude`)** | `~/.claude/skills/pstack` | `CLAUDE.md` | 自动化终端 |
-| **Codex CLI (`codex`)** | `~/.codex/skills/pstack` | `AGENTS.md` | 无状态执行 |
-| **OpenCode (`opencode`)** | `~/.config/opencode/skills/pstack` + `~/.config/opencode/command/` | `AGENTS.md` | 斜杠指令 |
-| **Cursor IDE (`cursor`)** | `~/.cursor/skills-cursor/pstack` | `.cursor/rules/pstack.mdc` + `AGENTS.md` | 编辑器规则 |
-| **WorkBuddy AI (`workbuddy`)** | `~/.workbuddy-ai/skills/pstack` | `AGENTS.md` + `SKILL.md` | 本地 Agent |
+| **Codex CLI & App (`codex`)** | `~/.codex/skills/pstack` | `AGENTS.md` | 双 Tab 演练与盲审 |
+| **OpenCode (`opencode`)** | `~/.config/opencode/skills/pstack` + `command/*.md` | `AGENTS.md` + 7 个 `/` 快捷命令 | 斜杠指令工作台 |
+| **Cursor IDE (`cursor`)** | `~/.cursor/skills-cursor/pstack` | `.cursor/rules/pstack.mdc` + `AGENTS.md` | 编辑器内联规则 |
+| **WorkBuddy AI (`workbuddy`)** | `~/.workbuddy-ai/skills/pstack` | `AGENTS.md` + `SKILL.md` | 桌面端双 Tab 宿主 |
+| **Pi Agent (`pi`)** | `~/.pi/agent/skills/pstack` | `AGENTS.md` + `SKILL.md` | 极简桌面与终端宿主 |
+| **Universal Agent Pool** | `~/.agents/skills/pstack` | 跨宿主通用技能发现池 | 通用标准挂载点 |
 
 ---
 
 ## 4. 30 秒开箱与跨仓库轻量初始化 (Quick Start)
 
-在终端运行以下命令完成全局挂载与诊断：
+在终端运行以下命令完成 8 路宿主全局挂载与跨项目初始化：
 
 ```bash
-# 1. 一键挂载 5 大 Agent 技能与 ~/.local/bin/pstack 全局命令
+# 1. 一键挂载 8 路 Agent 技能、OpenCode 斜杠命令与 ~/.local/bin/pstack
 ./scripts/bootstrap-repo.sh --global
 
-# 2. 检查全局挂载状态
+# 2. 检查 8/8 宿主与全局 CLI 挂载状态
 pstack status
 
-# 3. 在任意外部项目初始化轻量工作区 (默认 light 模式，支持 light|symlink|copy)
-cd /path/to/your/repo && pstack init
+# 3. 在任意外部项目初始化轻量工作区 (支持 --light | --full | --symlink)
+cd /path/to/your/repo && pstack init --light
 
-# 4. 查看当前解析出的 PSTACK_HOME 与 WORKSPACE_ROOT
-pstack path
+# 4. 自动探测当前项目的验证命令，或从最近 3 次提交直接生成技术推文简报
+pstack onboard --detect
+pstack onboard --to-thread --commits 3 --playbook tech-thread
 ```
 
 ---
 
-## 5. 统一 CLI 与确定性门禁 (Verification CLI)
+## 5. 统一 CLI、四重门禁与零 Token 工具链 (Verification & Tooling CLI)
 
-所有代码与长文产出必须通过 `pstack verify` 校验且返回码为 `0` [实测 Measured]：
+所有代码与长文产出必须通过 `pstack verify all` 四重门禁与 `pstack verify verdict` 裁决校验 [实测 Measured]：
 
 ```bash
-# 运行全部三重门禁 (Handoff + Prose Unslop + Code Comment Sicko)
+# 运行全部四重门禁 (Gate 1 Handoff + Gate 2 Prose + Gate 3 Code Slop + Gate 4 Runtime cmd)
 pstack verify all
 
-# 单独校验 Markdown 文章的 AI 腔、句长、破折号与证据标签
-pstack verify prose README.md
+# 为新建的 Independent Verifier 标签页输出 ≤20 行只读审查摘要
+pstack verify prep-verifier
 
-# 单独校验源码中的废话注释与静默吞异常
-pstack verify code scripts/
+# 校验 .agents/handoffs/verifier-verdict.md 四级裁决并自动导出干净定稿 output-final.md
+pstack verify verdict
 
-# 派发全新无状态子 Agent (支持 opencode | codex | codex-review | claude | agy | dry-run)
-pstack spawn dry-run
+# 五层纠错下沉：扫描 decision.tsv 高频 REVERT 教训，追加自定义代码正则或散文禁令
+pstack correct --scan
+pstack correct --code-rule "^\s*print\([\"']DEBUG" "禁止遗留临时 DEBUG print 语句"
+pstack correct --prose-ban "心智负担"
 
-# 触发 /correct 机制，将特定套话永久写入黑名单
-pstack ban "心智负担"
-
-# 记录实证实验与架构取舍至当前工作区的 .agents/decision.tsv
-pstack log add \
-  --task-id "self-discovery-07" \
-  --verdict "KEEP" \
-  --hypothesis "Overlay层叠解析可在外部空目录零复制复用全局剧本与门禁" \
-  --pointer "scripts/pstack_resolver.py:1-145" \
-  --before "脱离母版目录即报路径断链" \
-  --after "任意外部目录pstack init与verify all 100%全绿" \
-  --lesson "将静态规则资产与动态工作区状态解耦可彻底消除跨目录断链"
+# 跨窗口/跨天断点续传：生成与读取严格 ≤20 行的 session-snapshot.md
+pstack pause "完成核心模块重构与四重门禁验证"
+pstack pickup
 ```
 
-### 终端门禁运行样张
+### 终端四重门禁运行样张
 
 ```text
 ====================================================================
-PSTACK DETERMINISTIC VERIFICATION SUITE
+PSTACK v2.0 FOUR-GATE VERIFICATION SUITE
 ====================================================================
-[1/3] Handoff Brief Check   : .agents/handoffs/active-brief.md -> PASS (0 pointers overflow)
-[2/3] Prose Unslop Check    : README.md                        -> PASS (0 slop words, 0 dashes)
-[3/3] Comment Sicko Check   : scripts/                         -> PASS (0 redundant comments)
+[1/4] Handoff Brief Check   : .agents/handoffs/active-brief.md -> PASS (Schema V2 valid)
+[2/4] Prose & Restate Check : .agents/handoffs/output-draft.md -> PASS (Builder Restate + 0 slop)
+[3/4] Comment Sicko & Rules : scripts/ (1 custom rule)         -> PASS (0 violations)
+[4/4] Runtime verify_cmd    : exit=0, sha256=1aefa2e6acf7      -> PASS (evidence-pack.md updated)
 ====================================================================
-STATUS : ALL CHECKS GREEN (Return Code: 0)
+STATUS : ALL 4 HARNESS GATES GREEN (Return Code: 0)
 ====================================================================
 ```
 
@@ -171,29 +162,36 @@ STATUS : ALL CHECKS GREEN (Return Code: 0)
 
 ## 6. 目录拓扑 (Repository Topology)
 
+完整 v2.0 升级规范请参阅 [UPGRADE_V2.md](file:///Users/admin/Downloads/%E5%9C%9F%E8%B1%86%E5%A7%90%E7%9A%84%E5%B7%A5%E4%BD%9C%E6%B5%81/UPGRADE_V2.md)。
+
 ```text
 .
-├── AGENTS.md                        # Antigravity / Codex / OpenCode / Cursor 极简入口
+├── AGENTS.md                        # Antigravity / Codex / OpenCode / Cursor / Pi 极简入口
 ├── CLAUDE.md                        # Claude Code 自动加载入口
+├── UPGRADE_V2.md                    # Pstack v2.0 桌面端双角色隔离与升级规范文档
 ├── .cursor/rules/pstack.mdc         # Cursor IDE 自动加载规则
-├── adapters/opencode/commands/      # OpenCode 全局斜杠命令 (/pstack, /tech-thread, /interrogate, /unslop)
+├── adapters/opencode/commands/      # OpenCode 全局斜杠命令 (/pstack-build, /pstack-verify, /pstack-pickup 等)
 ├── .agents/
 │   ├── decision.tsv                 # 实证决策与踩坑回滚账本 (动态工作区状态)
-│   ├── handoffs/                    # 主从 Agent 指针交接区 (active-brief.md, evidence-pack.md, output-draft.md)
-│   ├── pstack/                      # 静态母版资产库 (支持通过 ~/.config/pstack/home 全局层叠回退)
-│   │   ├── pstack-core.md           # 主控 Agent 协议栈调度内核
-│   │   ├── custom-banned-phrases.txt# /correct 动态追加禁用词库
+│   ├── handoffs/                    # 交接区 (active-brief, evidence-pack, output-draft/final, verifier-verdict, session-snapshot)
+│   ├── pstack/                      # 静态母版资产库 (通过 ~/.config/pstack/home 全局层叠回退)
+│   │   ├── pstack-core.md           # Tier 0 主控调度内核 (严格 ≤ 48 行)
+│   │   ├── custom-banned-phrases.txt# /correct 动态追加散文禁用词库
+│   │   ├── custom-code-rules.tsv    # /correct 动态追加代码正则禁令表
 │   │   ├── playbooks/               # 6 大场景强制执行剧本
 │   │   └── principles/              # 5 大底层铁律 (Unslop, No-Comments, Prove-It-Works 等)
-│   └── skills/pstack/SKILL.md       # 跨平台通用 Skill 定义
+│   └── skills/pstack/SKILL.md       # 8 路宿主通用 Skill 定义
 └── scripts/
-    ├── pstack                       # 全局统一 CLI 入口 (init|status|path|verify|spawn|log|ban)
+    ├── pstack                       # 全局统一 CLI (init|status|path|verify|correct|pause|pickup|onboard|export|spawn|log|ban)
     ├── pstack_resolver.py           # PSTACK_HOME 与 WORKSPACE_ROOT 自发现及层叠解析器
-    ├── pstack-verify.py             # 门禁总控与 /correct 禁用词追加 CLI
-    ├── verify-prose.py              # 中英双语 Unslop 散文校验器
-    ├── verify-code-slop.py          # Comment Sicko 代码坏味道校验器
+    ├── pstack-verify.py             # 四重门禁总控、Verifier 摘要与裁决校验器
+    ├── pstack-correct.py            # 五层纠错扫描与自定义代码/散文规则下沉工具
+    ├── pstack-session.py            # ≤ 20 行跨窗口断点快照 (pause / pickup) 工具
+    ├── pstack-onboard.py            # 项目验证命令探测与 Git Commit 转推文 Brief 生成器
+    ├── verify-prose.py              # 中英双语 Unslop 散文与 [Builder Restate] 校验器
+    ├── verify-code-slop.py          # Comment Sicko 与 custom-code-rules.tsv 校验器
     ├── verify-handoff.py            # 子 Agent 交接单防膨胀校验器
     ├── log-decision.py              # decision.tsv 实证入账工具
-    ├── ag-spawn.sh                  # 跨 CLI 无状态子 Agent 派发器
-    └── bootstrap-repo.sh            # 5 大 Agent 全局安装与跨仓库注入脚本
+    ├── ag-spawn.sh                  # 跨 CLI 与桌面端宿主派发器
+    └── bootstrap-repo.sh            # 8 路宿主全局安装与跨仓库注入脚本
 ```

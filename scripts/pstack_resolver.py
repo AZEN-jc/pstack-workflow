@@ -28,13 +28,13 @@ verify_cmd: "pstack verify all"
 ---
 
 ## 1. User Goal (Restated)
-当前工作区已完成 Pstack 轻量级骨架初始化，可随时承接代码实现、架构批判或技术长文任务。
+当前工作区已完成 Pstack v2.0 轻量级骨架初始化，可随时承接代码实现、架构批判或技术长文任务。
 
 ## 2. Consolidated Directives (History & Delta)
 - [Init] 已初始化本地 `.agents/decision.tsv` 与 `.agents/handoffs/` 状态目录，静态规则自动回退至 `PSTACK_HOME`。
 
 ## 3. Evidence Pointers (Read-Only Context)
-- 核心调度协议：`.agents/pstack/pstack-core.md:1-30`
+- 核心调度协议：`.agents/pstack/pstack-core.md:1-48`
 - 实证决策账本：`.agents/decision.tsv:1-1`
 
 ## 4. Deliverable Contract
@@ -46,9 +46,23 @@ DEFAULT_EVIDENCE_PACK = """# Pstack Evidence Pack
 - Initialized workspace evidence pack `[实测 Measured]`。
 """
 
-DEFAULT_OUTPUT_DRAFT = """# Pstack Output Draft
+DEFAULT_OUTPUT_DRAFT = """> [Builder Restate] 目标是初始化工作区默认草稿并验证四重门禁连通性。
+> 前提与痛点是未校验草稿容易混入破折号、套话与无根据断言。
+> 最小动作是绑定实测标签并通过 `pstack verify prose` 静态校验。
+
+# Pstack Output Draft
 
 当前工作区已挂载 Pstack 确定性校验门禁，所有产出将在提交前通过自动化脚本验证 `[实测 Measured]`。
+"""
+
+DEFAULT_VERIFIER_VERDICT = """# Pstack Independent Verifier Verdict
+
+- **ACT_ON**: None (0 blocking defects detected) `[实测 Measured]`。
+- **CONSIDER**: 可根据业务模块补充针对性单元测试 `[推导 Inferred]`。
+- **NOTED**: 默认工作区骨架已通过四重门禁校验 `[实测 Measured]`。
+- **DISMISSED**: 无需拷贝静态剧本目录 `[实测 Measured]`。
+
+VERDICT: PASS
 """
 
 
@@ -124,6 +138,10 @@ def ensure_workspace_skeleton(workspace_root: Path) -> None:
     draft_path = handoffs_dir / "output-draft.md"
     if not draft_path.exists():
         draft_path.write_text(DEFAULT_OUTPUT_DRAFT, encoding="utf-8")
+
+    verdict_path = handoffs_dir / "verifier-verdict.md"
+    if not verdict_path.exists():
+        verdict_path.write_text(DEFAULT_VERIFIER_VERDICT, encoding="utf-8")
 
 
 def main() -> int:

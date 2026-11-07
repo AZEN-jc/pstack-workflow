@@ -7,6 +7,8 @@ import re
 import sys
 from pathlib import Path
 
+from pstack_resolver import get_pstack_home, get_workspace_root
+
 CODE_EXTENSIONS = {".py", ".sh", ".js", ".ts", ".tsx", ".go", ".rs"}
 
 SKIP_DIRS = {
@@ -32,20 +34,52 @@ SWALLOWED_EXCEPTION_PATTERNS = [
 ]
 
 
+def load_custom_code_rules(workspace_root: Path) -> list[tuple[str, str, str]]:
+    roots = [get_pstack_home()]
+    if workspace_root not in roots:
+        roots.append(workspace_root)
+
+    rules: list[tuple[str, str, str]] = []
+    seen_ids: set[str] = set()
+    for root in roots:
+        tsv_file = root / ".agents" / "pstack" / "custom-code-rules.tsv"
+        if not tsv_file.exists():
+            continue
+        for idx, line in enumerate(tsv_file.read_text(encoding="utf-8").splitlines()):
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#") or (idx == 0 and stripped.startswith("rule_id\t")):
+                continue
+            parts = stripped.split("\t")
+            if len(parts) < 3:
+                continue
+            rule_id, pattern, reason = parts[0].strip(), parts[1].strip(), parts[2].strip()
+            if rule_id and pattern and rule_id not in seen_ids:
+                seen_ids.add(rule_id)
+                rules.append((rule_id, pattern, reason))
+    return rules
+
+
 def collect_files(targets: list[str]) -> list[Path]:
     files: list[Path] = []
+    seen: set[Path] = set()
     for raw in targets:
         p = Path(raw)
         if p.is_file() and p.suffix in CODE_EXTENSIONS:
-            files.append(p)
+            resolved = p.resolve()
+            if resolved not in seen:
+                seen.add(resolved)
+                files.append(p)
         elif p.is_dir():
             for sub in sorted(p.rglob("*")):
                 if sub.is_file() and sub.suffix in CODE_EXTENSIONS and not SKIP_DIRS.intersection(sub.parts):
-                    files.append(sub)
+                    resolved = sub.resolve()
+                    if resolved not in seen:
+                        seen.add(resolved)
+                        files.append(sub)
     return files
 
 
-def check_file(filepath: Path) -> list[str]:
+def check_file(filepath: Path, custom_rules: list[tuple[str, str, str]]) -> list[str]:
     errors: list[str] = []
     text = filepath.read_text(encoding="utf-8")
     lines = text.splitlines()
@@ -62,6 +96,12 @@ def check_file(filepath: Path) -> list[str]:
             if re.search(pat, line, re.IGNORECASE):
                 errors.append(
                     f"{filepath.name}:{idx} [Comment Sicko]: 检测到复述代码行为的 AI 废话注释 -> `{stripped[:50]}`"
+                )
+
+        for rule_id, pat, reason in custom_rules:
+            if re.search(pat, line):
+                errors.append(
+                    f"{filepath.name}:{idx} [Custom Rule:{rule_id}]: {reason} -> `{stripped[:50]}`"
                 )
 
         is_comment = stripped.startswith("#") or stripped.startswith("//")
@@ -91,15 +131,18 @@ def main() -> int:
         print("[FAIL] No matching code files found to check.")
         return 1
 
+    workspace_root = get_workspace_root(files[0])
+    custom_rules = load_custom_code_rules(workspace_root)
+
     all_errors: list[str] = []
     for f in files:
-        all_errors.extend(check_file(f))
+        all_errors.extend(check_file(f, custom_rules))
 
     print("=" * 68)
-    print(f"PSTACK COMMENT SICKO & CODE SLOP HARNESS ({len(files)} files scanned)")
+    print(f"PSTACK COMMENT SICKO & CODE SLOP HARNESS ({len(files)} files, {len(custom_rules)} custom rules)")
     print("=" * 68)
     if not all_errors:
-        print("STATUS : ALL CHECKS GREEN (0 redundant comments or swallowed exceptions)")
+        print("STATUS : ALL CHECKS GREEN (0 redundant comments, swallowed exceptions, or custom rule hits)")
         print("=" * 68)
         return 0
 

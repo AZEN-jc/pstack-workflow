@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """
 pstack Unslop & Prose Verification Harness
-Usage: python3 scripts/verify-prose.py <markdown_file> [--max-zh-chars 45] [--max-en-words 28]
+Usage:
+  python3 scripts/verify-prose.py <markdown_file> [--max-zh-chars 45] [--max-en-words 28] [--require-restate]
+  python3 scripts/verify-prose.py <markdown_file> --export-clean <output_path>
 """
 import argparse
 import re
@@ -55,6 +57,60 @@ def strip_inline_markup(line: str) -> str:
     return cleaned
 
 
+def strip_builder_restate(text: str) -> str:
+    lines = text.splitlines()
+    out_lines: list[str] = []
+    in_restate = False
+    skip_next_blank = False
+
+    for idx, line in enumerate(lines):
+        stripped = line.strip()
+        if idx < 10 and not in_restate and stripped.startswith(">") and "[Builder Restate]" in stripped:
+            in_restate = True
+            continue
+        if in_restate:
+            if stripped.startswith(">"):
+                continue
+            in_restate = False
+            skip_next_blank = True
+        if skip_next_blank and not stripped:
+            skip_next_blank = False
+            continue
+        skip_next_blank = False
+        out_lines.append(line)
+
+    return "\n".join(out_lines).lstrip("\n") + "\n"
+
+
+def check_builder_restate(raw_lines: list[str]) -> list[str]:
+    errors: list[str] = []
+    head = raw_lines[:6]
+    restate_start = -1
+    for idx, line in enumerate(head):
+        if line.strip().startswith(">") and "[Builder Restate]" in line:
+            restate_start = idx
+            break
+
+    if restate_start == -1:
+        errors.append(
+            "[Builder Restate Missing]: output-draft.md 前 6 行必须包含 `> [Builder Restate]` 三句话复述头。"
+        )
+        return errors
+
+    restate_len = 0
+    for line in raw_lines[restate_start:]:
+        if line.strip().startswith(">"):
+            restate_len += 1
+        else:
+            break
+
+    if restate_len > 4:
+        errors.append(
+            f"[Builder Restate Bloat]: `[Builder Restate]` 块占用了 {restate_len} 行(上限 4 行)，请精简。"
+        )
+    return errors
+
+
 def count_zh_chars(s: str) -> int:
     return len(re.findall(r"[\u4e00-\u9fff]", s))
 
@@ -63,18 +119,27 @@ def count_en_words(s: str) -> int:
     return len(re.findall(r"[A-Za-z0-9_'-]+", s))
 
 
-def verify_file(filepath: Path, max_zh_chars: int = 45, max_en_words: int = 28) -> int:
+def verify_file(
+    filepath: Path,
+    max_zh_chars: int = 45,
+    max_en_words: int = 28,
+    require_restate: bool = False,
+) -> int:
     if not filepath.exists():
         print(f"[FAIL] File not found: {filepath}")
         return 1
 
     raw_text = filepath.read_text(encoding="utf-8")
+    raw_lines = raw_text.splitlines()
     prose = strip_code_blocks_preserve_lines(raw_text)
     lines = prose.splitlines()
     workspace_root = get_workspace_root(filepath)
     custom_banned = load_custom_banned(workspace_root)
 
     errors: list[str] = []
+
+    if require_restate or filepath.name == "output-draft.md":
+        errors.extend(check_builder_restate(raw_lines))
 
     for idx, line in enumerate(lines, 1):
         stripped = line.strip()
@@ -154,8 +219,17 @@ def main() -> int:
     parser.add_argument("markdown_file", type=Path, help="Path to the markdown file to verify")
     parser.add_argument("--max-zh-chars", type=int, default=45, help="Max Chinese characters per sentence")
     parser.add_argument("--max-en-words", type=int, default=28, help="Max English words per sentence")
+    parser.add_argument("--require-restate", action="store_true", help="Enforce > [Builder Restate] header")
+    parser.add_argument("--export-clean", type=Path, help="Strip > [Builder Restate] and write clean output")
     args = parser.parse_args()
-    return verify_file(args.markdown_file, args.max_zh_chars, args.max_en_words)
+
+    rc = verify_file(args.markdown_file, args.max_zh_chars, args.max_en_words, args.require_restate)
+    if rc == 0 and args.export_clean is not None:
+        cleaned = strip_builder_restate(args.markdown_file.read_text(encoding="utf-8"))
+        args.export_clean.parent.mkdir(parents=True, exist_ok=True)
+        args.export_clean.write_text(cleaned, encoding="utf-8")
+        print(f"[OK] Exported clean final document -> {args.export_clean}")
+    return rc
 
 
 if __name__ == "__main__":

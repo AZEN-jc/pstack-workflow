@@ -1,15 +1,14 @@
-# Pstack Coordinator Core (Protocol Stack Multi-Agent Edition)
+# Pstack v2.0 Coordinator Core (Tier 0: <= 48 Lines)
 
-## 1. 首句强制对齐 (In-Your-Own-Words)
-收到任务的第一句话，禁止寒暄，直接用你自己的话输出三行：
-- **Target（目标）**：这项任务最终要交付什么产物（修复补丁、架构设计、或 N 连发技术推文/长文），面向哪类硬核读者或调用者。
-- **Premise & Bottleneck（前提与痛点）**：要解决的核心矛盾、根因假说，或要批判的架构缺陷是什么。
-- **Smallest Leap（最小闭环动作）**：匹配的 Playbook 路径，以及即将派发的第一个 Subagent 动作。
-
-说完直接执行，不要等用户回复“确认”。如果现有代码、测试或日志证据直接推翻了用户的假设，贴出精确的文件行号或实测证据并立刻终止（Candor over Sycophancy）。
+## 1. 首句三行对齐 (In-Your-Own-Words) & Tier 0/1/2 上下文预算
+收到任务禁止寒暄，首句必须用你自己的话输出三行并立即执行（若现有证据推翻用户假设，贴出 `file:line` 立刻终止）：
+- **Target（目标）**：交付产物（修复补丁、架构设计、或 N 连发技术推文/长文）及目标硬核受众。
+- **Premise & Bottleneck（前提与痛点）**：要解决的核心矛盾、根因假说，或要批判的架构缺陷。
+- **Smallest Leap（最小闭环动作）**：匹配的 Playbook 路径，以及首个 Builder / Subagent 动作。
+- **三级上下文预算**：Tier 0 常驻本文件（≤48行）；Tier 1 单轮交接（`active-brief.md` 代码块≤15行 + `evidence-pack.md` 静态指针与≤15行运行时摘要）；Tier 2 离线脚本（`correct/pause/pickup/onboard` 平时 0 Token，触发输出≤20行）。
 
 ## 2. 剧本原样挂载 (Playbook Literal Binding)
-根据任务类型从下表路由并读取 `.agents/pstack/playbooks/<name>.md`，将其中的步骤**逐字复制**为你当前任务的 Todo 列表。若跳过某步，必须保留该行并写明 `skip: <实证原因>`：
+从下表读取 `.agents/pstack/playbooks/<name>.md`，将其步骤**逐字复制**为 Todo 列表（跳过某步须保留并写明 `skip: <实证原因>`）：
 
 | 任务类型 | 挂载剧本路径 | 适用场景 |
 | :--- | :--- | :--- |
@@ -20,10 +19,9 @@
 | **对抗审查与多模型竞技** | `.agents/pstack/playbooks/interrogate.md` | 召唤异构模型冷酷挑刺（`/interrogate`）或多方案比拼（`/arena`） |
 | **未知复杂系统逆向深潜** | `.agents/pstack/playbooks/figure-it-out.md` | 追踪跨模块状态流转（`/how`）、挖掘历史原因（`/why`）与爆炸半径 |
 
-## 3. 全新子 Agent 混合双模交接法则 (Fresh Subagent Handoff)
-- **只传指针，不塞原文**：向 Worker 派发任务时，只传文件路径与行号范围（如 `src/agent/runner.ts:45-120`），严禁把超过 15 行的源码粘进 Prompt（`scripts/verify-handoff.py` 会直接报错拦截）。
-- **拒绝旧会话恢复（No Interrupt-Chained Resume）**：当第一版草稿或代码需要修改时，绝不在旧子会话中继续追问。必须将【原始目标 + 本轮修正指令 + 上一轮产出路径】合并覆写至 `.agents/handoffs/active-brief.md` 的 `Consolidated Directives (History & Delta)` 区块，拉起**全新**的无状态子 Agent。
-- **混合双模路由策略（Native vs. External CLI）**：
-  - **同生态极速执行（Antigravity 原生 `invoke_subagent`）**：仓库内快速只读搜证（`TypeName="research"`）或需要 `Workspace="branch"` 分支隔离的代码实验（`TypeName="self"`），优先调用原生 `invoke_subagent`，提示词直接指向 `.agents/handoffs/active-brief.md`。
-  - **跨模型异构盲审与对抗写作（`./scripts/ag-spawn.sh`）**：需要跳出单一模型盲区进行代码审查（`codex` / `codex-review`）、独立文风起草（`opencode` / `claude`）或无头批处理（`agy`）时，调用 `./scripts/ag-spawn.sh .agents/handoffs/active-brief.md <runner>`。
-- **主控亲自验收与实证入账**：子 Agent 返回后，主控必须亲自读取产出并运行 `python3 scripts/pstack-verify.py`。任何关键实验结论、踩坑回滚或性能前后对比，必须调用 `python3 scripts/log-decision.py` 记入 `.agents/decision.tsv`。禁止原样转发子 Agent 总结。
+## 3. 桌面端双 Tab 隔离与全新子 Agent 交接 (Builder + Independent Verifier)
+- **只传指针、拒绝旧会话恢复**：严禁粘贴 >15 行源码。需修改时必须将【原始目标 + 本轮修正 + 上轮指针】合并覆写至 `.agents/handoffs/active-brief.md`，拉起**全新**无状态会话。
+- **桌面端同宿主双 Tab 闭环（OpenCode / Codex / WorkBuddy / Pi / Claude / Cursor / AGY）**：
+  1. **Tab 1 Builder（`/pstack-build`）**：读取 `active-brief.md`，在 `output-draft.md` 顶部前 6 行写入 3 行内 `> [Builder Restate]`，执行实现后运行 `pstack verify all`（自动触发 Gate 4 执行 `verify_cmd` 并将 SHA256 与末尾 10 行写入 `evidence-pack.md`）。
+  2. **Tab 2 Independent Verifier（新建空白 Tab 运行 `/pstack-verify`）**：运行 `pstack verify prep-verifier` 只读审查 `active-brief.md`、`evidence-pack.md` 与 `git diff --stat`，按 `ACT_ON / CONSIDER / NOTED / DISMISSED` 四级分类写入 `.agents/handoffs/verifier-verdict.md` 并标注 `VERDICT: PASS | REJECT`，最后执行 `pstack verify verdict` 自动导出剥离复述头的干净定稿 `output-final.md`。
+- **零 Token 辅助工具链**：入职探测与推文提炼用 `pstack onboard (--detect | --to-thread)`；五层纠错下沉用 `pstack correct (--scan | --code-rule | --prose-ban)`；跨天 ≤20 行断点续传用 `pstack pause` 与 `pstack pickup`。

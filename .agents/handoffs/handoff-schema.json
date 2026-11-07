@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "PstackHandoffBrief",
+  "title": "PstackHandoffBriefV2",
   "description": "Schema for .agents/handoffs/active-brief.md YAML frontmatter and required markdown sections",
   "type": "object",
   "required": [
@@ -24,8 +24,8 @@
     },
     "target_agent": {
       "type": "string",
-      "enum": ["antigravity", "codex", "codex-review", "opencode", "claude"],
-      "description": "Target runner for execution"
+      "enum": ["opencode", "codex", "codex-review", "workbuddy", "pi", "claude", "antigravity"],
+      "description": "Target runner or desktop host for execution"
     },
     "playbook": {
       "type": "string",
