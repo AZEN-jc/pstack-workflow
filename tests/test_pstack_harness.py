@@ -18,7 +18,12 @@ SCRIPTS_DIR = REPO_ROOT / "scripts"
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-from pstack_bench import measure_context_compression, run_adversarial_mutation_suite, run_live_ab_experiment
+from pstack_bench import (
+    measure_context_compression,
+    run_adversarial_mutation_suite,
+    run_live_ab_experiment,
+    run_sandbox_ab_suite,
+)
 from pstack_onboard import detect_verify_cmd
 from pstack_resolver import ensure_workspace_skeleton, get_pstack_home, get_workspace_root, resolve_asset
 from pstack_session import generate_snapshot
@@ -312,6 +317,181 @@ Test pointer auto healing.
             tsv_text = (out_dir / "ab-experiments.tsv").read_text(encoding="utf-8")
             self.assertIn("workbuddy", tsv_text)
             self.assertIn("100.0%", tsv_text)
+
+    def test_chaos_partial_write_quarantine_and_idempotent_retry(self) -> None:
+        spawn_sh = SCRIPTS_DIR / "ag-spawn.sh"
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp).resolve()
+            subprocess.run(["git", "init"], cwd=ws, capture_output=True, check=True)
+            subprocess.run(["git", "config", "user.name", "Test User"], cwd=ws, capture_output=True, check=True)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=ws, capture_output=True, check=True)
+
+            ensure_workspace_skeleton(ws)
+            calc_py = ws / "calc.py"
+            calc_py.write_text("def add(a: int, b: int) -> int:\n    return a + b\n", encoding="utf-8")
+            subprocess.run(["git", "add", "."], cwd=ws, capture_output=True, check=True)
+            subprocess.run(["git", "commit", "-m", "init"], cwd=ws, capture_output=True, check=True)
+
+            env = os.environ.copy()
+            env["PSTACK_WORKSPACE"] = str(ws)
+
+            env["PSTACK_SPAWN_TEST_CMD"] = "echo 'def corrupt(:' >> calc.py && touch dirty_partial.tmp && exit 1"
+            proc_crash = subprocess.run(
+                [str(spawn_sh), "codex"],
+                cwd=ws,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(proc_crash.returncode, 1)
+
+            calc_text = calc_py.read_text(encoding="utf-8")
+            self.assertNotIn("def corrupt(:", calc_text)
+            self.assertIn("def add", calc_text)
+            self.assertFalse((ws / "dirty_partial.tmp").exists())
+
+            patches = list((ws / ".agents" / "handoffs" / "logs").glob("crash-partial-*.patch"))
+            self.assertEqual(len(patches), 1)
+            patch_content = patches[0].read_text(encoding="utf-8")
+            self.assertIn("def corrupt(:", patch_content)
+
+            proc_apply = subprocess.run(
+                ["git", "apply", "--check", str(patches[0])],
+                cwd=ws,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(proc_apply.returncode, 0, f"Corrupted patch generated: {proc_apply.stderr}")
+
+            snap_file = ws / ".agents" / "handoffs" / "session-snapshot.md"
+            self.assertTrue(snap_file.is_file())
+            snap_lines = snap_file.read_text(encoding="utf-8").splitlines()
+            self.assertLessEqual(len(snap_lines), 20)
+            self.assertIn("Quarantined Patch", "\n".join(snap_lines))
+
+            env["PSTACK_SPAWN_TEST_CMD"] = "echo 'def sub(a: int, b: int) -> int:\n    return a - b' >> calc.py && exit 0"
+            proc_retry = subprocess.run(
+                [str(spawn_sh), "codex"],
+                cwd=ws,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(proc_retry.returncode, 0)
+            retry_calc_text = calc_py.read_text(encoding="utf-8")
+            self.assertIn("def sub", retry_calc_text)
+            self.assertNotIn("def corrupt(:", retry_calc_text)
+
+    def test_chaos_preserves_pre_spawn_uncommitted_baseline(self) -> None:
+        spawn_sh = SCRIPTS_DIR / "ag-spawn.sh"
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp).resolve()
+            subprocess.run(["git", "init"], cwd=ws, capture_output=True, check=True)
+            subprocess.run(["git", "config", "user.name", "Test User"], cwd=ws, capture_output=True, check=True)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=ws, capture_output=True, check=True)
+
+            ensure_workspace_skeleton(ws)
+            code_py = ws / "code.py"
+            code_py.write_text("def base():\n    return 1\n", encoding="utf-8")
+            subprocess.run(["git", "add", "."], cwd=ws, capture_output=True, check=True)
+            subprocess.run(["git", "commit", "-m", "init"], cwd=ws, capture_output=True, check=True)
+
+            code_py.write_text("def base():\n    return 1\n\ndef user_work():\n    return 42\n", encoding="utf-8")
+
+            env = os.environ.copy()
+            env["PSTACK_WORKSPACE"] = str(ws)
+            env["PSTACK_SPAWN_TEST_CMD"] = "echo 'syntax error :::' >> code.py && exit 1"
+
+            proc = subprocess.run(
+                [str(spawn_sh), "codex"],
+                cwd=ws,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(proc.returncode, 1)
+
+            restored = code_py.read_text(encoding="utf-8")
+            self.assertIn("user_work", restored)
+            self.assertNotIn("syntax error", restored)
+
+    def test_chaos_no_quarantine_flag(self) -> None:
+        spawn_sh = SCRIPTS_DIR / "ag-spawn.sh"
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp).resolve()
+            subprocess.run(["git", "init"], cwd=ws, capture_output=True, check=True)
+            subprocess.run(["git", "config", "user.name", "Test User"], cwd=ws, capture_output=True, check=True)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=ws, capture_output=True, check=True)
+
+            ensure_workspace_skeleton(ws)
+            test_py = ws / "test.py"
+            test_py.write_text("def ok(): pass\n", encoding="utf-8")
+            subprocess.run(["git", "add", "."], cwd=ws, capture_output=True, check=True)
+            subprocess.run(["git", "commit", "-m", "init"], cwd=ws, capture_output=True, check=True)
+
+            env = os.environ.copy()
+            env["PSTACK_WORKSPACE"] = str(ws)
+            env["PSTACK_SPAWN_TEST_CMD"] = "echo 'def dirty(): pass' >> test.py && exit 1"
+
+            proc = subprocess.run(
+                [str(spawn_sh), "--no-quarantine", "codex"],
+                cwd=ws,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(proc.returncode, 1)
+
+            self.assertIn("def dirty(): pass", test_py.read_text(encoding="utf-8"))
+            patches = list((ws / ".agents" / "handoffs" / "logs").glob("crash-partial-*.patch"))
+            self.assertEqual(len(patches), 1)
+
+    def test_sandbox_ab_suite_execution(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            out_dir = Path(tmp).resolve()
+            results = run_sandbox_ab_suite(REPO_ROOT, out_dir=out_dir)
+            self.assertEqual(len(results), 3)
+            self.assertTrue(all(t["treatment_verdict"] == "PASS" for t in results))
+            tsv_path = out_dir / "ab-experiments.tsv"
+            self.assertTrue(tsv_path.is_file())
+            tsv_text = tsv_path.read_text(encoding="utf-8")
+            self.assertIn("Task 1: bug-fix-state-machine", tsv_text)
+            self.assertIn("Task 2: feature-cli-subcmd", tsv_text)
+            self.assertIn("Task 3: refactor-slop-cleanup", tsv_text)
+
+    def test_blind_verifier_and_epistemic_tiers(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp).resolve()
+            ensure_workspace_skeleton(ws)
+
+            doc = ws / "epistemic_tiers.md"
+            doc.write_text(
+                "> [Builder Restate] 目标是验证三级实证标签。\n\n"
+                "离线指标达成预期 `[离线实测 Offline-Measured]`。\n"
+                "沙箱模拟门禁拦截有效 `[沙箱模拟 Sim-Verified]`。\n"
+                "真机执行全部绿灯 `[真机实测 Live-Agent]`。\n",
+                encoding="utf-8",
+            )
+            with redirect_stdout(io.StringIO()):
+                rc_doc = verify_prose.verify_file(doc, require_restate=True)
+            self.assertEqual(rc_doc, 0)
+
+            with redirect_stdout(io.StringIO()):
+                rc_blind = pstack_verify.prep_verifier_digest(ws, blind=True)
+            self.assertEqual(rc_blind, 0)
+            blind_file = ws / ".agents" / "handoffs" / "blind-review-pack.md"
+            self.assertTrue(blind_file.is_file())
+            blind_lines = blind_file.read_text(encoding="utf-8").splitlines()
+            self.assertLessEqual(len(blind_lines), 25)
+            blind_content = "\n".join(blind_lines)
+            self.assertIn("User Goal", blind_content)
+            self.assertIn("Deliverable Contract", blind_content)
+            self.assertNotIn("[Builder Restate]", blind_content)
 
 
 if __name__ == "__main__":

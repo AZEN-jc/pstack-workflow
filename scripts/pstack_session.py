@@ -73,10 +73,10 @@ def read_last_decisions(workspace_root: Path, count: int = 3) -> list[str]:
     return items or ["  - (no decision records)"]
 
 
-def read_last_spawn_status(workspace_root: Path) -> str | None:
+def read_last_spawn_status(workspace_root: Path) -> tuple[str | None, str | None]:
     logs_dir = workspace_root / ".agents" / "handoffs" / "logs"
     if not logs_dir.is_dir():
-        return None
+        return None, None
 
     status_json = logs_dir / "last-spawn-status.json"
     if status_json.exists():
@@ -88,13 +88,16 @@ def read_last_spawn_status(workspace_root: Path) -> str | None:
             tail = str(data.get("tail", "")).strip()[:48]
             label = "FAILED" if exit_code != 0 else "OK"
             tail_suffix = f" ({tail})" if tail else ""
-            return f"- **Last Spawn Status**: `{label} (runner={runner}, exit={exit_code})` -> `{log_rel}`{tail_suffix}"
+            spawn_line = f"- **Last Spawn Status**: `{label} (runner={runner}, exit={exit_code})` -> `{log_rel}`{tail_suffix}"
+            patch_rel = data.get("quarantined_patch")
+            quarantine_line = f"- **Quarantined Patch**: `{patch_rel}`" if patch_rel else None
+            return spawn_line, quarantine_line
         except (ValueError, OSError):
-            return None
+            return None, None
 
     log_files = sorted(logs_dir.glob("spawn-*.log"), key=lambda p: p.stat().st_mtime, reverse=True)
     if not log_files:
-        return None
+        return None, None
 
     latest = log_files[0]
     log_rel = f".agents/handoffs/logs/{latest.name}"
@@ -103,7 +106,7 @@ def read_last_spawn_status(workspace_root: Path) -> str | None:
     joined_tail = "\n".join(lines[-5:]).upper()
     is_fail = any(tok in joined_tail for tok in ("FAIL", "ERROR", "TIMEOUT", "CRASH", "EXIT="))
     label = "FAILED" if is_fail else "LOGGED"
-    return f"- **Last Spawn Status**: `{label}` -> `{log_rel}` ({tail})"
+    return f"- **Last Spawn Status**: `{label}` -> `{log_rel}` ({tail})", None
 
 
 def generate_snapshot(workspace_root: Path, note: str = "") -> Path:
@@ -112,8 +115,12 @@ def generate_snapshot(workspace_root: Path, note: str = "") -> Path:
     branch, status_summary, modified_files = read_git_summary(workspace_root)
     task_id, role, verify_cmd = read_brief_meta(workspace_root)
     decisions = read_last_decisions(workspace_root, 3)
-    spawn_line = read_last_spawn_status(workspace_root)
+    spawn_line, quarantine_line = read_last_spawn_status(workspace_root)
     clean_note = note.strip() or "Ready for stateless pickup (`[实测 Measured]`)"
+    if not quarantine_line:
+        m = re.search(r"Quarantined Patch:\s*(\S+)", clean_note)
+        if m:
+            quarantine_line = f"- **Quarantined Patch**: `{m.group(1).strip()}`"
 
     snapshot_lines = [
         f"# Pstack Session Snapshot ({ts})",
@@ -124,6 +131,8 @@ def generate_snapshot(workspace_root: Path, note: str = "") -> Path:
     ]
     if spawn_line:
         snapshot_lines.append(spawn_line)
+    if quarantine_line:
+        snapshot_lines.append(quarantine_line)
     snapshot_lines.extend(
         [
             "- **Recent Empirical Decisions (`.agents/decision.tsv`)**:",

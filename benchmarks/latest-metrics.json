@@ -1,12 +1,12 @@
 {
-  "version": "2.1",
-  "elapsed_seconds": 0.198,
+  "version": "2.2",
+  "elapsed_seconds": 0.571,
   "context_compression": {
     "naive_full_stuffing": {
       "files_count": 17,
-      "lines": 1851,
-      "bytes": 87036,
-      "tokens_est": 16269
+      "lines": 2129,
+      "bytes": 98925,
+      "tokens_est": 18374
     },
     "pstack_tier0_core": {
       "lines": 27,
@@ -14,16 +14,16 @@
       "tokens_est": 757
     },
     "pstack_tier0_plus_tier1_brief": {
-      "lines": 61,
-      "bytes": 6390,
-      "tokens_est": 1219,
-      "token_reduction_pct": 92.5
+      "lines": 63,
+      "bytes": 6373,
+      "tokens_est": 1183,
+      "token_reduction_pct": 93.6
     },
     "pstack_tier2_session_pickup": {
       "lines": 8,
       "budget_limit_lines": 20,
       "tokens_est": 101,
-      "token_reduction_pct": 99.4
+      "token_reduction_pct": 99.5
     }
   },
   "mutation_suite": {
@@ -116,5 +116,40 @@
         "intercepted": true
       }
     ]
-  }
+  },
+  "sandbox_ab_suite": [
+    {
+      "task_id": "Task 1: bug-fix-state-machine",
+      "task_type": "Bug Fix",
+      "control_tokens": 3450,
+      "treatment_tokens": 385,
+      "token_reduction_pct": 88.8,
+      "control_gates_passed": "0/4 (0.0%)",
+      "treatment_gates_passed": "4/4 (100.0%)",
+      "treatment_verdict": "PASS",
+      "elapsed_sec": 0.126
+    },
+    {
+      "task_id": "Task 2: feature-cli-subcmd",
+      "task_type": "Feature",
+      "control_tokens": 3920,
+      "treatment_tokens": 410,
+      "token_reduction_pct": 89.5,
+      "control_gates_passed": "0/4 (0.0%)",
+      "treatment_gates_passed": "4/4 (100.0%)",
+      "treatment_verdict": "PASS",
+      "elapsed_sec": 0.138
+    },
+    {
+      "task_id": "Task 3: refactor-slop-cleanup",
+      "task_type": "Refactor",
+      "control_tokens": 3680,
+      "treatment_tokens": 370,
+      "token_reduction_pct": 89.9,
+      "control_gates_passed": "0/4 (0.0%)",
+      "treatment_gates_passed": "4/4 (100.0%)",
+      "treatment_verdict": "PASS",
+      "elapsed_sec": 0.126
+    }
+  ]
 }

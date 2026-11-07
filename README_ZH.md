@@ -3,6 +3,7 @@
 <p align="center"><b><a href="./README.md">English</a></b> | <b>简体中文</b></p>
 
 <p align="center">
+  <a href="https://github.com/AZEN-jc/pstack-workflow/actions/workflows/pstack-ci.yml"><img src="https://github.com/AZEN-jc/pstack-workflow/actions/workflows/pstack-ci.yml/badge.svg" alt="Pstack CI" /></a>
   <img src="https://img.shields.io/badge/Architecture-Dual--Tab_v2.0_Harness-2563EB?style=flat-square" alt="Architecture" />
   <img src="https://img.shields.io/badge/Context_Budget-Tier_0_%E2%89%A4_48_Lines-7C3AED?style=flat-square" alt="Context Budget" />
   <img src="https://img.shields.io/badge/Verification-4_Deterministic_Gates-10B981?style=flat-square" alt="Verification" />
@@ -14,7 +15,7 @@
   <a href="https://github.com/AZEN-jc/pstack-workflow"><img src="https://img.shields.io/badge/Session_Snapshot-%E2%89%A4_20_Lines_Pickup-E11D48?style=flat-square" alt="Snapshot" /></a>
 </p>
 
-> 面向多智能体协作工作区的确定性协议栈与四重门禁工程约束体系 [实测 Measured]。
+> 面向多智能体协作工作区的确定性协议栈与四重门禁工程约束体系 [离线实测 Offline-Measured]。
 > 放任自流的编程智能体会发明大量冗长客套的会话废话，并在耗尽上下文前堆砌无法运行的补丁。
 > Pstack v2.0 以四重自动化物理门禁与双标签页角色隔离替代脆弱的人性信任。
 > 静态母版库与易变的业务仓库彻底物理隔离，在 8 大本地宿主实现全流程确定性工程约束。
@@ -28,8 +29,10 @@
 > Pstack v2.0 把它重构为工业级协议栈约束。常驻内核控制在 48 行以内。任务派发只传行号范围指针。桌面端双 Tab 分别承担构建与独立盲审，交付产物必须通过四重脚本检验。
 
 日常使用 AI 编程时，最常遇到的挫败并非模型能力不足，而是缺乏工程纪律。
+初始交接单载荷相对传统全量塞入压缩达 92.5% [离线实测 Offline-Measured]。
+多轮长会话的综合 Token 变化取决于交互轮次与工具调用 [沙箱模拟 Sim-Verified]。
 
-| 典型翻车场景 | 传统多 Agent 协作方式 | Pstack v2.0 确定性解法 | 终态实测收益 [实测 Measured] |
+| 典型翻车场景 | 传统多 Agent 协作方式 | Pstack v2.0 确定性解法 | 终态实测收益 [离线实测 Offline-Measured] |
 | :--- | :--- | :--- | :--- |
 | **满屏客套挤爆窗口** | 互相吹捧并大量输出寒暄废话，长提示词挤占宝贵上下文。 | **Tier 0 极简内核 (≤48行)**。首句强制三行直入主题，草稿顶部强制 3 行复述头。 | 常驻上下文压缩至 ~450 Tokens |
 | **代码大爆炸与坏味道** | 一次性甩出数百行巨额补丁，引入冗余注释与隐藏语法破坏。 | **指针交接单**。主从协作仅传 `file:start-end` 范围指针，严禁贴超 15 行源码。 | 单次交接降至 620 Tokens |
@@ -40,7 +43,7 @@
 
 ## 2. 核心架构：三级上下文预算与双 Tab 隔离 (Core Architecture)
 
-调用者在任意外部仓库运行 `pstack` 时无需手工复制剧本。系统通过静态母版库与动态工作区解耦实现零断链运行 [实测 Measured]。
+调用者在任意外部仓库运行 `pstack` 时无需手工复制剧本。系统通过静态母版库与动态工作区解耦实现零断链运行 [离线实测 Offline-Measured]。
 
 ```text
                        +---------------------------------------+
@@ -67,16 +70,16 @@
              +--------------------------+    +--------------------------+
 ```
 
-- **Tier 0 常驻路由层 (`pstack-core.md` ≤ 48 行)**：极简 3 行入口强制所有宿主首步读取 `.agents/pstack/pstack-core.md` [实测 Measured]。
-- **Tier 1 双区证据包 (`evidence-pack.md`)**：同时保留静态代码行号指针与 Gate 4 自动生成的 `## Runtime Verification Digest`（含退出码、12 位 SHA256 与末尾 10 行输出）[实测 Measured]。
-- **桌面端同宿主双 Tab 闭环**：Tab 1 运行 `/pstack-build` 完成构建与四重门禁；同宿主新建空白 Tab 2 运行 `/pstack-verify`，输出 `ACT_ON / CONSIDER / NOTED / DISMISSED` 四级裁决并自动导出剥离复述头的 `.agents/handoffs/output-final.md` [实测 Measured]。
-- **Tier 2 零 Token 离线工具链 (`correct / pause / pickup / onboard`)**：平时消耗 0 Token，触发时输出严格控制在 20 行以内 [实测 Measured]。
+- **Tier 0 常驻路由层 (`pstack-core.md` ≤ 48 行)**：极简 3 行入口强制所有宿主首步读取 `.agents/pstack/pstack-core.md` [离线实测 Offline-Measured]。
+- **Tier 1 双区证据包 (`evidence-pack.md`)**：同时保留静态代码行号指针与 Gate 4 自动生成的 `## Runtime Verification Digest`（含退出码、12 位 SHA256 与末尾 10 行输出）[沙箱模拟 Sim-Verified]。
+- **桌面端同宿主双 Tab 闭环**：Tab 1 运行 `/pstack-build` 完成构建与四重门禁；同宿主新建空白 Tab 2 运行 `/pstack-verify`，输出 `ACT_ON / CONSIDER / NOTED / DISMISSED` 四级裁决并自动导出剥离复述头的 `.agents/handoffs/output-final.md` [沙箱模拟 Sim-Verified]。
+- **Tier 2 零 Token 离线工具链 (`correct / pause / pickup / onboard`)**：平时消耗 0 Token，触发时输出严格控制在 20 行以内 [离线实测 Offline-Measured]。
 
 ---
 
 ## 3. 本机 8 大宿主与全局 CLI 挂载矩阵 (8-Host Matrix)
 
-运行一次安装脚本即可在本机 8 大 Agent 宿主目录与 `~/.local/bin` 中同步激活 `pstack` [实测 Measured]。
+运行一次安装脚本即可在本机 8 大 Agent 宿主目录与 `~/.local/bin` 中同步激活 `pstack` [离线实测 Offline-Measured]。
 
 | 挂载目标 | 全局挂载路径 | 项目级自动入口 | 核心定位 |
 | :--- | :--- | :--- | :--- |
@@ -116,14 +119,14 @@ pstack onboard --to-thread --commits 3 --playbook tech-thread
 
 ## 5. 统一 CLI、四重门禁与零 Token 工具链 (Verification & Tooling CLI)
 
-所有代码与长文产出必须通过 `pstack verify all` 四重门禁与 `pstack verify verdict` 裁决校验 [实测 Measured]：
+所有代码与长文产出必须通过 `pstack verify all` 四重门禁与 `pstack verify verdict` 裁决校验 [沙箱模拟 Sim-Verified]。
 
 ```bash
 # 运行全部四重门禁 (Gate 1 Handoff + Gate 2 Prose + Gate 3 Code Slop + Gate 4 Runtime cmd)
 pstack verify all
 
-# 为新建的 Independent Verifier 标签页输出 ≤20 行只读审查摘要
-pstack verify prep-verifier
+# 为新建的 Independent Verifier 标签页输出 ≤25 行盲审包
+pstack verify prep-verifier --blind
 
 # 校验 .agents/handoffs/verifier-verdict.md 四级裁决并自动导出干净定稿 output-final.md
 pstack verify verdict
@@ -147,7 +150,7 @@ pstack bench
 pstack verify handoff --fix
 ```
 
-完整的上下文压缩比与 12 组变异样本 100% 拦截实测数据请参阅 [benchmarks/latest-report.md](./benchmarks/latest-report.md) [实测 Measured]。
+完整的上下文压缩比与 12 组变异样本 100% 拦截实测数据请参阅 [benchmarks/latest-report.md](./benchmarks/latest-report.md) [离线实测 Offline-Measured]。
 
 ### 终端四重门禁运行样张
 

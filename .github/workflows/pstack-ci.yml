@@ -1,0 +1,61 @@
+name: Pstack CI
+
+on:
+  push:
+    branches: ["main", "master", "**"]
+  pull_request:
+    branches: ["main", "master", "**"]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Deterministic Harness & Verification Gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Make scripts executable
+        run: chmod +x scripts/pstack scripts/ag-spawn.sh scripts/bootstrap-repo.sh
+
+      - name: Run unit test suite (pstack test)
+        run: ./scripts/pstack test
+
+      - name: Run reproducible benchmark & 3-task sandbox A/B suite (pstack bench)
+        run: ./scripts/pstack bench
+
+      - name: Verify handoff brief and auto-heal pointers
+        run: ./scripts/pstack verify handoff --fix
+
+      - name: Execute all 4 deterministic harness gates, blind review pack, and verdict
+        run: |
+          ./scripts/pstack verify all
+          ./scripts/pstack verify prep-verifier --blind
+          ./scripts/pstack verify verdict
+
+      - name: Enforce Comment Sicko and code anti-slop rules
+        run: python3 scripts/verify-code-slop.py scripts tests
+
+      - name: Validate documentation prose and epistemic tags
+        run: |
+          python3 scripts/verify-prose.py README.md
+          python3 scripts/verify-prose.py README_ZH.md
+          python3 scripts/verify-prose.py UPGRADE_V2.md
+          python3 scripts/verify-prose.py benchmarks/latest-report.md
+
+      - name: Upload benchmark artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pstack-benchmark-artifacts
+          path: |
+            benchmarks/latest-report.md
+            benchmarks/latest-metrics.json
+            benchmarks/ab-experiments.tsv

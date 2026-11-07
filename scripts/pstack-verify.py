@@ -134,6 +134,16 @@ def export_clean_final(workspace_root: Path, scripts_dir: Path, draft_arg: str |
     )
 
 
+def safe_truncate(text: str, max_len: int) -> str:
+    cleaned = text.strip()
+    if len(cleaned) <= max_len:
+        return cleaned
+    truncated = cleaned[:max_len].rstrip()
+    if truncated.count("`") % 2 != 0:
+        truncated += "`"
+    return truncated + "..."
+
+
 def prep_verifier_digest(workspace_root: Path, blind: bool = False) -> int:
     brief_path = resolve_asset(".agents/handoffs/active-brief.md", workspace_root)
     draft_path = resolve_asset(".agents/handoffs/output-draft.md", workspace_root)
@@ -145,23 +155,36 @@ def prep_verifier_digest(workspace_root: Path, blind: bool = False) -> int:
         raw_brief = brief_path.read_text(encoding="utf-8")
         m_goal = re.search(r"## 1\. User Goal \(Restated\)\s*\n+([^\n]+)", raw_brief)
         if m_goal:
-            goal_line = m_goal.group(1).strip()[:90]
+            goal_line = safe_truncate(m_goal.group(1), 95)
         m_contract = re.search(r"## 4\. Deliverable Contract\s*\n([\s\S]*?)(?:\n##|\Z)", raw_brief)
         if m_contract:
             contract_lines = [
-                ln.strip()[:80]
+                safe_truncate(ln, 85)
                 for ln in m_contract.group(1).splitlines()
                 if ln.strip() and not ln.strip().startswith("#")
             ]
 
-    runtime_lines: list[str] = []
+    exit_val = ""
+    cmd_val = ""
+    gdiff_val = ""
+    tail_lines: list[str] = []
     if evidence_path.exists():
         raw_ev = evidence_path.read_text(encoding="utf-8")
         m_ev = re.search(r"## Runtime Verification Digest([\s\S]*)$", raw_ev)
         if m_ev:
-            for ln in m_ev.group(1).strip().splitlines()[:6]:
-                if ln.strip():
-                    runtime_lines.append(ln.strip()[:90])
+            body = m_ev.group(1).strip()
+            m_exit = re.search(r"- \*\*Exit Code & Digest\*\*:\s*([^\n]+)", body)
+            if m_exit:
+                exit_val = m_exit.group(1).strip()
+            m_cmd = re.search(r"- \*\*Command\*\*:\s*`([^`]+)`", body)
+            if m_cmd:
+                cmd_val = m_cmd.group(1).strip()
+            m_gdiff = re.search(r"- \*\*Git Diff Summary\*\*:\s*`?([^`\n]+)`?", body)
+            if m_gdiff:
+                gdiff_val = m_gdiff.group(1).strip()
+            m_tail = re.search(r"```(?:text)?\s*([\s\S]*?)```", body)
+            if m_tail:
+                tail_lines = [ln.strip() for ln in m_tail.group(1).strip().splitlines() if ln.strip()]
 
     if blind:
         diff_stat: list[str] = []
@@ -201,9 +224,22 @@ def prep_verifier_digest(workspace_root: Path, blind: bool = False) -> int:
             f"  - Files: `{files_str}`",
             f"  - Stat : `{stat_summary}`",
             "- **Runtime Verification Digest (Gate 4 Evidence)**:",
-            *(f"  {r}" for r in (runtime_lines[:5] or ["  (run `pstack verify all` first)"])),
-            "- **Verifier Next Action**: Audit evidence, write 4 tiers to verifier-verdict.md, run `pstack verify verdict`.",
         ]
+        if exit_val:
+            blind_pack.append(f"  - Exit & SHA256: {exit_val}")
+        if cmd_val:
+            blind_pack.append(f"  - Command: `{safe_truncate(cmd_val, 80)}`")
+        if tail_lines:
+            blind_pack.append("  - Output Tail:")
+            blind_pack.append("    ```text")
+            for tln in tail_lines[-3:]:
+                blind_pack.append(f"    {safe_truncate(tln, 75)}")
+            blind_pack.append("    ```")
+        elif not exit_val:
+            blind_pack.append("  (run `pstack verify all` first)")
+        blind_pack.append(
+            "- **Verifier Next Action**: Audit evidence, write 4 tiers to verifier-verdict.md, run `pstack verify verdict`."
+        )
         bounded_blind = "\n".join(blind_pack[:25]) + "\n"
         blind_file = workspace_root / ".agents" / "handoffs" / "blind-review-pack.md"
         blind_file.parent.mkdir(parents=True, exist_ok=True)
@@ -215,7 +251,15 @@ def prep_verifier_digest(workspace_root: Path, blind: bool = False) -> int:
     if draft_path.exists():
         for ln in draft_path.read_text(encoding="utf-8").splitlines()[:6]:
             if ln.strip().startswith(">"):
-                restate_lines.append(ln.strip()[:90])
+                restate_lines.append(safe_truncate(ln, 90))
+
+    runtime_summary: list[str] = []
+    if exit_val:
+        runtime_summary.append(f"  {exit_val}")
+    if cmd_val:
+        runtime_summary.append(f"  cmd: `{safe_truncate(cmd_val, 70)}`")
+    for tln in tail_lines[-2:]:
+        runtime_summary.append(f"  tail: {safe_truncate(tln, 70)}")
 
     out: list[str] = [
         "=== PSTACK INDEPENDENT VERIFIER DIGEST (READ-ONLY) ===",
@@ -224,7 +268,7 @@ def prep_verifier_digest(workspace_root: Path, blind: bool = False) -> int:
         "BUILDER RESTATE:",
         *(restate_lines[:3] or ["  (none)"]),
         "RUNTIME EVIDENCE:",
-        *(runtime_lines[:4] or ["  (run `pstack verify all` first)"]),
+        *(runtime_summary[:4] or ["  (run `pstack verify all` first)"]),
         "NEXT STEP : Write 4-tier review to .agents/handoffs/verifier-verdict.md & run `pstack verify verdict`",
     ]
     print("\n".join(out[:20]))

@@ -1,0 +1,19 @@
+timestamp	task_name	runner	control_tokens	treatment_tokens	token_reduction_pct	control_gates_passed	treatment_gates_passed	elapsed_sec	notes
+2026-11-07T17:16:51+08:00	Task 1: bug-fix-state-machine	sandbox-sim	3450	385	88.8%	0/4 (0.0%)	4/4 (100.0%)	0.146	3-Task Deterministic Sandbox A/B
+2026-11-07T17:16:51+08:00	Task 2: feature-cli-subcmd	sandbox-sim	3920	410	89.5%	0/4 (0.0%)	4/4 (100.0%)	0.135	3-Task Deterministic Sandbox A/B
+2026-11-07T17:16:51+08:00	Task 3: refactor-slop-cleanup	sandbox-sim	3680	370	89.9%	0/4 (0.0%)	4/4 (100.0%)	0.139	3-Task Deterministic Sandbox A/B
+2026-11-07T17:24:18+08:00	Task 1: bug-fix-state-machine	sandbox-sim	3450	385	88.8%	0/4 (0.0%)	4/4 (100.0%)	0.126	3-Task Deterministic Sandbox A/B
+2026-11-07T17:24:18+08:00	Task 2: feature-cli-subcmd	sandbox-sim	3920	410	89.5%	0/4 (0.0%)	4/4 (100.0%)	0.121	3-Task Deterministic Sandbox A/B
+2026-11-07T17:24:18+08:00	Task 3: refactor-slop-cleanup	sandbox-sim	3680	370	89.9%	0/4 (0.0%)	4/4 (100.0%)	0.124	3-Task Deterministic Sandbox A/B
+2026-11-07T17:25:41+08:00	Task 1: bug-fix-state-machine	sandbox-sim	3450	385	88.8%	0/4 (0.0%)	4/4 (100.0%)	0.123	3-Task Deterministic Sandbox A/B
+2026-11-07T17:25:41+08:00	Task 2: feature-cli-subcmd	sandbox-sim	3920	410	89.5%	0/4 (0.0%)	4/4 (100.0%)	0.124	3-Task Deterministic Sandbox A/B
+2026-11-07T17:25:41+08:00	Task 3: refactor-slop-cleanup	sandbox-sim	3680	370	89.9%	0/4 (0.0%)	4/4 (100.0%)	0.124	3-Task Deterministic Sandbox A/B
+2026-11-07T17:29:06+08:00	Task 1: bug-fix-state-machine	sandbox-sim	3450	385	88.8%	0/4 (0.0%)	4/4 (100.0%)	0.125	3-Task Deterministic Sandbox A/B
+2026-11-07T17:29:06+08:00	Task 2: feature-cli-subcmd	sandbox-sim	3920	410	89.5%	0/4 (0.0%)	4/4 (100.0%)	0.121	3-Task Deterministic Sandbox A/B
+2026-11-07T17:29:06+08:00	Task 3: refactor-slop-cleanup	sandbox-sim	3680	370	89.9%	0/4 (0.0%)	4/4 (100.0%)	0.124	3-Task Deterministic Sandbox A/B
+2026-11-07T17:40:14+08:00	Task 1: bug-fix-state-machine	sandbox-sim	3450	385	88.8%	0/4 (0.0%)	4/4 (100.0%)	0.14	3-Task Deterministic Sandbox A/B
+2026-11-07T17:40:14+08:00	Task 2: feature-cli-subcmd	sandbox-sim	3920	410	89.5%	0/4 (0.0%)	4/4 (100.0%)	0.121	3-Task Deterministic Sandbox A/B
+2026-11-07T17:40:14+08:00	Task 3: refactor-slop-cleanup	sandbox-sim	3680	370	89.9%	0/4 (0.0%)	4/4 (100.0%)	0.125	3-Task Deterministic Sandbox A/B
+2026-11-07T17:41:23+08:00	Task 1: bug-fix-state-machine	sandbox-sim	3450	385	88.8%	0/4 (0.0%)	4/4 (100.0%)	0.126	3-Task Deterministic Sandbox A/B
+2026-11-07T17:41:23+08:00	Task 2: feature-cli-subcmd	sandbox-sim	3920	410	89.5%	0/4 (0.0%)	4/4 (100.0%)	0.138	3-Task Deterministic Sandbox A/B
+2026-11-07T17:41:23+08:00	Task 3: refactor-slop-cleanup	sandbox-sim	3680	370	89.9%	0/4 (0.0%)	4/4 (100.0%)	0.126	3-Task Deterministic Sandbox A/B

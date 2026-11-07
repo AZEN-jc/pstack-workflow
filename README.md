@@ -3,6 +3,7 @@
 <p align="center"><b>English</b> | <b><a href="./README_ZH.md">简体中文</a></b></p>
 
 <p align="center">
+  <a href="https://github.com/AZEN-jc/pstack-workflow/actions/workflows/pstack-ci.yml"><img src="https://github.com/AZEN-jc/pstack-workflow/actions/workflows/pstack-ci.yml/badge.svg" alt="Pstack CI" /></a>
   <img src="https://img.shields.io/badge/Architecture-Dual--Tab_v2.0_Harness-2563EB?style=flat-square" alt="Architecture" />
   <img src="https://img.shields.io/badge/Context_Budget-Tier_0_%E2%89%A4_48_Lines-7C3AED?style=flat-square" alt="Context Budget" />
   <img src="https://img.shields.io/badge/Verification-4_Deterministic_Gates-10B981?style=flat-square" alt="Verification" />
@@ -14,7 +15,7 @@
   <a href="https://github.com/AZEN-jc/pstack-workflow"><img src="https://img.shields.io/badge/Session_Snapshot-%E2%89%A4_20_Lines_Pickup-E11D48?style=flat-square" alt="Snapshot" /></a>
 </p>
 
-> Deterministic protocol stack and 4-gate verification harness for coding agents [Measured].
+> Deterministic protocol stack and 4-gate verification harness for coding agents [Offline-Measured].
 > Left unconstrained, coding agents hallucinate imports and generate verbose conversational filler.
 > They paste unvetted diffs across broken paths before exhausting context windows.
 > Pstack v2.0 replaces conversational trust with 4 mechanical gates and dual-tab role isolation.
@@ -29,8 +30,10 @@
 > Pstack v2.0 refactors agent workflows into industrial protocol stack constraints. The core stays under 48 lines. Task handoffs pass range pointers only. Dual desktop tabs isolate building from blind verification under 4 deterministic gates.
 
 AI coding failures stem from poor discipline, not weak models.
+Initial handoff payload compresses by 92.5% [Offline-Measured].
+Multi-turn session token delta depends on conversation depth [Sim-Verified].
 
-| Failure Mode | Conventional Agent Setup | Pstack v2.0 Deterministic Solution | Measured Payoff [Measured] |
+| Failure Mode | Conventional Agent Setup | Pstack v2.0 Deterministic Solution | Measured Payoff [Offline-Measured] |
 | :--- | :--- | :--- | :--- |
 | **Conversational Bloat** | Excessive politeness and verbose filler exhausting context windows. | **Tier 0 Minimal Core (≤48 lines)**. Immediate 3-line triage, mandatory 3-line draft restate header. | Baseline context compressed to ~450 tokens |
 | **Code Smells & Explosions** | Massive diffs pasted at once, introducing redundant comments and broken syntax. | **Pointer-Only Handoffs**. Handoffs pass `file:start-end` pointers only; code snippets capped at 15 lines. | Per-turn brief drops to 620 tokens |
@@ -41,7 +44,7 @@ AI coding failures stem from poor discipline, not weak models.
 
 ## 2. Core Architecture: 3-Tier Context Budgeting & Dual-Tab Isolation
 
-Running pstack needs no manual playbook copying. Decoupled templates ensure zero-break execution [Measured].
+Running pstack needs no manual playbook copying. Decoupled templates ensure zero-break execution [Offline-Measured].
 
 ```text
                        +---------------------------------------+
@@ -68,16 +71,16 @@ Running pstack needs no manual playbook copying. Decoupled templates ensure zero
              +--------------------------+    +--------------------------+
 ```
 
-- **Tier 0 Resident Routing (`pstack-core.md` ≤ 48 lines)**: Minimal 3-line entry mandates every agent to read `.agents/pstack/pstack-core.md` first [Measured].
-- **Tier 1 Dual-Zone Evidence Pack (`evidence-pack.md`)**: Preserves static line pointers alongside Gate 4 generated `## Runtime Verification Digest` (exit code, 12-char SHA256, last 10 log lines) [Measured].
-- **Desktop Dual-Tab Isolation**: Tab 1 runs `/pstack-build` for implementation and 4-gate validation. Fresh Tab 2 runs `/pstack-verify`, emits 4-tier verdict (`ACT_ON / CONSIDER / NOTED / DISMISSED`), and exports sanitized `output-final.md` [Measured].
-- **Tier 2 Zero-Token Offline Toolchain (`correct / pause / pickup / onboard`)**: Consumes 0 tokens during normal operation, output strictly capped at 20 lines when invoked [Measured].
+- **Tier 0 Resident Routing (`pstack-core.md` ≤ 48 lines)**: Minimal 3-line entry mandates every agent to read `.agents/pstack/pstack-core.md` first [Offline-Measured].
+- **Tier 1 Dual-Zone Evidence Pack (`evidence-pack.md`)**: Preserves static line pointers alongside Gate 4 generated `## Runtime Verification Digest` (exit code, 12-char SHA256, last 10 log lines) [Sim-Verified].
+- **Desktop Dual-Tab Isolation**: Tab 1 runs `/pstack-build` for implementation and 4-gate validation. Fresh Tab 2 runs `/pstack-verify`, emits 4-tier verdict (`ACT_ON / CONSIDER / NOTED / DISMISSED`), and exports sanitized `output-final.md` [Sim-Verified].
+- **Tier 2 Zero-Token Offline Toolchain (`correct / pause / pickup / onboard`)**: Consumes 0 tokens during normal operation, output strictly capped at 20 lines when invoked [Offline-Measured].
 
 ---
 
 ## 3. 8-Host Matrix & Global CLI Mounts
 
-One bootstrap run mounts pstack across 8 hosts. Global CLI activates simultaneously in ~/.local/bin [Measured].
+One bootstrap run mounts pstack across 8 hosts. Global CLI activates simultaneously in ~/.local/bin [Offline-Measured].
 
 | Target Host | Global Mount Path | Project Auto Entry | Core Role |
 | :--- | :--- | :--- | :--- |
@@ -117,14 +120,14 @@ pstack onboard --to-thread --commits 3 --playbook tech-thread
 
 ## 5. Unified CLI, 4-Gate Verification & Zero-Token Toolchain
 
-All deliverables must pass 4 harness gates. Verdicts require review via pstack verify verdict [Measured].
+All deliverables must pass 4 harness gates. Verdicts require review via pstack verify verdict [Sim-Verified].
 
 ```bash
 # Run all 4 deterministic gates (Gate 1 Handoff + Gate 2 Prose + Gate 3 Code Slop + Gate 4 Runtime cmd)
 pstack verify all
 
-# Generate a ≤20-line read-only review summary for fresh Independent Verifier tab
-pstack verify prep-verifier
+# Generate a ≤25-line blind review pack for fresh Independent Verifier tab
+pstack verify prep-verifier --blind
 
 # Validate .agents/handoffs/verifier-verdict.md and export clean output-final.md
 pstack verify verdict
@@ -148,7 +151,7 @@ pstack bench
 pstack verify handoff --fix
 ```
 
-See [benchmarks/latest-report.md](./benchmarks/latest-report.md) for full benchmark metrics [Measured].
+See [benchmarks/latest-report.md](./benchmarks/latest-report.md) for full benchmark metrics [Offline-Measured].
 
 ### Terminal 4-Gate Output Sample
 

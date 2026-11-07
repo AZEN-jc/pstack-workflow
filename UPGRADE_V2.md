@@ -1,7 +1,7 @@
 # Pstack v2.0 架构升级规范：桌面端双角色隔离与零上下文膨胀
 
-> 调用者在桌面端同宿主新建两个空白标签页，即可完成生产实现与独立对抗验收 `[实测 Measured]`。
-> 常驻路由内核严格锁定在 48 行以内，彻底杜绝系统提示词挤占业务窗口 `[实测 Measured]`。
+> 调用者在桌面端同宿主新建两个空白标签页，即可完成生产实现与独立对抗验收 `[离线实测 Offline-Measured]`。
+> 常驻路由内核严格锁定在 48 行以内，彻底杜绝系统提示词挤占业务窗口 `[离线实测 Offline-Measured]`。
 > 离线辅助工具平时消耗零上下文，触发时仅输出 20 行以内的高信噪比摘要 `[推导 Inferred]`。
 
 ---
@@ -9,9 +9,9 @@
 ## 1. 升级目标与受众感知 (Impact First)
 
 工程团队在日常使用多智能体协作时，无需再把终端输出人肉复制到聊天窗口。
-Pstack v2.0 将协议栈拆分为三级上下文预算与四重机械门禁 `[实测 Measured]`。
+Pstack v2.0 将协议栈拆分为三级上下文预算与四重机械门禁 `[离线实测 Offline-Measured]`。
 
-| 架构维度 | Pstack v1.0 状态 | Pstack v2.0 生产终版 | 实测收益 `[实测 Measured]` |
+| 架构维度 | Pstack v1.0 状态 | Pstack v2.0 生产终版 | 实测收益 `[离线实测 Offline-Measured]` |
 | :--- | :--- | :--- | :--- |
 | **常驻上下文预算** | 无硬性行数上限 | **Tier 0 锁定 ≤ 48 行** (`.agents/pstack/pstack-core.md`) | 常驻体积压缩至约 450 Tokens |
 | **桌面端角色隔离** | 依赖外部命令行切换 | **同宿主双 Tab 闭环** (`/pstack-build` + `/pstack-verify`) | 零人肉复制完成跨会话盲审 |
@@ -24,7 +24,7 @@ Pstack v2.0 将协议栈拆分为三级上下文预算与四重机械门禁 `[�
 ## 2. 三级上下文预算模型 (Tier 0 / Tier 1 / Tier 2)
 
 - **Tier 0 常驻路由层 (`≤ 48 行`)**：主控每次启动仅读取 `.agents/pstack/pstack-core.md`，完成首句三行对齐与剧本路由。
-- **Tier 1 单轮交接层 (`≤ 15 行代码块`)**：`.agents/handoffs/active-brief.md` 仅传文件行号指针，`.agents/handoffs/evidence-pack.md` 采用静态证据与运行时摘要双区合并 `[实测 Measured]`。
+- **Tier 1 单轮交接层 (`≤ 15 行代码块`)**：`.agents/handoffs/active-brief.md` 仅传文件行号指针，`.agents/handoffs/evidence-pack.md` 采用静态证据与运行时摘要双区合并 `[离线实测 Offline-Measured]`。
 - **Tier 2 零 Token 离线脚本层 (`≤ 20 行输出`)**：`pstack correct`、`pstack pause`、`pstack pickup` 与 `pstack onboard` 平时不占任何上下文，按需调用。
 
 ---
@@ -41,13 +41,13 @@ Pstack v2.0 将协议栈拆分为三级上下文预算与四重机械门禁 `[�
    | 新建同宿主空白 Tab 2 输入 /pstack-verify
    v
 [Tab 2: Independent Verifier (/pstack-verify)]
-   | 1. 运行 pstack verify prep-verifier 只读提取 ≤20 行审查摘要
+   | 1. 运行 pstack verify prep-verifier --blind 只读提取 ≤25 行盲审包
    | 2. 将 ACT_ON / CONSIDER / NOTED / DISMISSED 四级裁决写入 verifier-verdict.md
    | 3. 运行 pstack verify verdict 校验通过并自动剥离复述头导出 output-final.md
 ```
 
-- **作用域隔离的复述头校验**：`scripts/verify-prose.py` 仅对 `output-draft.md` 强制要求前 6 行包含 `> [Builder Restate]`，不污染 `README.md` 等普通文档 `[实测 Measured]`。
-- **干净定稿自动导出**：当 `pstack verify verdict` 校验 `VERDICT: PASS` 通过后，系统自动剥离顶部复述块并生成 `.agents/handoffs/output-final.md` `[实测 Measured]`。
+- **作用域隔离的复述头校验**：`scripts/verify-prose.py` 仅对 `output-draft.md` 强制要求前 6 行包含 `> [Builder Restate]`，不污染 `README.md` 等普通文档 `[离线实测 Offline-Measured]`。
+- **干净定稿自动导出**：当 `pstack verify verdict` 校验 `VERDICT: PASS` 通过后，系统自动剥离顶部复述块并生成 `.agents/handoffs/output-final.md` `[沙箱模拟 Sim-Verified]`。
 
 ---
 
@@ -83,7 +83,7 @@ pstack verify handoff --fix
 
 ## 5. 端到端验收契约 (Deliverable Verification)
 
-在仓库根目录依次执行以下 7 条命令，返回码均为 `0` 即代表 v2.0/v2.1 升级完备 `[实测 Measured]`：
+在仓库根目录依次执行以下 7 条命令，返回码均为 `0` 即代表 v2.0/v2.1 升级完备 `[离线实测 Offline-Measured]`：
 
 ```bash
 ./scripts/bootstrap-repo.sh --global && pstack status
@@ -91,6 +91,6 @@ wc -l .agents/pstack/pstack-core.md
 pstack test && pstack bench
 pstack pause "v2.1 upgrade complete" && pstack pickup
 pstack correct --scan && pstack onboard --detect
-pstack verify handoff --fix && pstack verify all && pstack verify prep-verifier && pstack verify verdict
+pstack verify handoff --fix && pstack verify all && pstack verify prep-verifier --blind && pstack verify verdict
 python3 scripts/verify-prose.py README.md && python3 scripts/verify-prose.py README_ZH.md && python3 scripts/verify-prose.py UPGRADE_V2.md && python3 scripts/verify-prose.py benchmarks/latest-report.md
 ```

@@ -10,3 +10,4 @@ venv/
 .agents/handoffs/ag-spawn-*.log
 .agents/handoffs/logs/
 .agents/handoffs/workbuddy-prompt.txt
+.agents/handoffs/blind-review-pack.md

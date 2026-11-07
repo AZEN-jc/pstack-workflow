@@ -89,7 +89,7 @@ on_spawn_exit() {
   local rc=$?
   if [[ "$SPAWN_ACTIVE" -eq 1 && "$rc" -ne 0 ]]; then
     PATCH_REL="$(python3 - "$WORKSPACE_ROOT" "$TASK_ID" "$RUNNER" "$rc" "$LOG_REL" "$LOG_FILE" "$STATUS_FILE" "$DO_QUARANTINE" <<'PY'
-import json, os, subprocess, sys
+import difflib, json, os, subprocess, sys
 from pathlib import Path
 
 ws = Path(sys.argv[1]).resolve()
@@ -102,7 +102,7 @@ status_path = Path(sys.argv[7])
 do_quarantine = int(sys.argv[8]) == 1
 
 snap_file = ws / ".agents" / "handoffs" / "logs" / f".pre-spawn-{task_id}.json"
-pre_state = {"is_git": False, "untracked": [], "modified": {}}
+pre_state = {"is_git": False, "untracked": [], "modified": {}, "modified_contents": {}}
 if snap_file.exists():
     try:
         pre_state = json.loads(snap_file.read_text(encoding="utf-8"))
@@ -125,6 +125,7 @@ if pre_state.get("is_git"):
 
     current_modified = [ln.strip() for ln in run_git(["diff", "--name-only"]).splitlines() if ln.strip()]
     pre_modified = pre_state.get("modified", {})
+    pre_contents = pre_state.get("modified_contents", {})
 
     dirty_tracked = []
     for mf in current_modified:
@@ -136,29 +137,67 @@ if pre_state.get("is_git"):
         patch_path = ws / ".agents" / "handoffs" / "logs" / f"crash-partial-{task_id}.patch"
         patch_path.parent.mkdir(parents=True, exist_ok=True)
         patch_chunks = []
-        if dirty_tracked:
-            d_out = run_git(["diff", "--"] + dirty_tracked)
-            if d_out.strip():
-                patch_chunks.append(d_out.strip())
+        for dt in dirty_tracked:
+            dt_path = ws / dt
+            if dt in pre_contents:
+                pre_text = pre_contents[dt]
+                cur_text = dt_path.read_text(encoding="utf-8", errors="replace") if dt_path.is_file() else ""
+                pre_lines = pre_text.splitlines(keepends=True)
+                cur_lines = cur_text.splitlines(keepends=True)
+                u_diff = "".join(difflib.unified_diff(pre_lines, cur_lines, fromfile=f"a/{dt}", tofile=f"b/{dt}"))
+                if u_diff.strip():
+                    patch_chunks.append(u_diff.strip())
+            else:
+                d_out = run_git(["diff", "--", dt])
+                if d_out.strip():
+                    patch_chunks.append(d_out.strip())
+
         for nu in new_untracked:
             nu_path = ws / nu
             if nu_path.is_file():
-                nu_text = nu_path.read_text(encoding="utf-8", errors="ignore")
-                patch_chunks.append(f"diff --git a/{nu} b/{nu}\nnew file mode 100644\n--- /dev/null\n+++ b/{nu}\n@@ -0,0 +1 @@\n" + nu_text)
+                nu_text = nu_path.read_text(encoding="utf-8", errors="replace")
+                lines = nu_text.splitlines()
+                if lines:
+                    plus_lines = "".join(f"+{ln}\n" for ln in lines)
+                    hunk = (
+                        f"diff --git a/{nu} b/{nu}\n"
+                        f"new file mode 100644\n"
+                        f"--- /dev/null\n"
+                        f"+++ b/{nu}\n"
+                        f"@@ -0,0 +1,{len(lines)} @@\n"
+                        f"{plus_lines}"
+                    )
+                else:
+                    hunk = (
+                        f"diff --git a/{nu} b/{nu}\n"
+                        f"new file mode 100644\n"
+                    )
+                patch_chunks.append(hunk.strip())
+
         if patch_chunks:
             patch_path.write_text("\n\n".join(patch_chunks) + "\n", encoding="utf-8")
             patch_rel = f".agents/handoffs/logs/crash-partial-{task_id}.patch"
 
         if do_quarantine:
             for dt in dirty_tracked:
-                subprocess.run(["git", "checkout", "HEAD", "--", dt], cwd=ws, check=False)
+                if dt in pre_contents:
+                    (ws / dt).write_text(pre_contents[dt], encoding="utf-8")
+                else:
+                    subprocess.run(["git", "checkout", "HEAD", "--", dt], cwd=ws, check=False)
             for nu in new_untracked:
                 nu_path = ws / nu
-                if nu_path.is_file():
+                if nu_path.is_file() or nu_path.is_symlink():
                     try:
                         nu_path.unlink()
                     except OSError:
                         pass
+                parent = nu_path.parent
+                while parent != ws and parent.is_dir():
+                    try:
+                        parent.rmdir()
+                        parent = parent.parent
+                    except OSError:
+                        break
 
 lines = [ln.strip() for ln in log_file.read_text(encoding="utf-8", errors="ignore").splitlines() if ln.strip()] if log_file.exists() else []
 tail = lines[-1][:72] if lines else f"exit={rc}"
@@ -210,13 +249,16 @@ def run_git(args):
         return ""
 
 is_git = run_git(["rev-parse", "--is-inside-work-tree"]).strip() == "true"
-snapshot = {"is_git": is_git, "untracked": [], "modified": {}}
+snapshot = {"is_git": is_git, "untracked": [], "modified": {}, "modified_contents": {}}
 if is_git:
     untracked = [ln.strip() for ln in run_git(["ls-files", "--others", "--exclude-standard"]).splitlines() if ln.strip()]
     snapshot["untracked"] = [u for u in untracked if not u.startswith(".agents/handoffs/logs/")]
     modified_files = [ln.strip() for ln in run_git(["diff", "--name-only"]).splitlines() if ln.strip()]
     for mf in modified_files:
         snapshot["modified"][mf] = run_git(["diff", "--", mf])
+        mf_path = ws / mf
+        if mf_path.is_file():
+            snapshot["modified_contents"][mf] = mf_path.read_text(encoding="utf-8", errors="replace")
 snap_file.write_text(json.dumps(snapshot, ensure_ascii=False), encoding="utf-8")
 PY
   SPAWN_ACTIVE=1

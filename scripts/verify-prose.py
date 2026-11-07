@@ -25,6 +25,29 @@ BANNED_EN = [
 ]
 
 
+EPISTEMIC_MARKERS = [
+    "[离线实测 Offline-Measured]",
+    "[沙箱模拟 Sim-Verified]",
+    "[真机实测 Live-Agent]",
+    "[Offline-Measured]",
+    "[Sim-Verified]",
+    "[Live-Agent]",
+    "[实测 Measured]",
+    "[推导 Inferred]",
+    "[Measured]",
+    "[Inferred]",
+    "[实测]",
+    "[推导]",
+    "[猜测]",
+    "[Guess]",
+]
+
+EPISTEMIC_TAG_REGEX = re.compile(
+    r"\[(?:离线实测\s+Offline-Measured|沙箱模拟\s+Sim-Verified|真机实测\s+Live-Agent|Offline-Measured|Sim-Verified|Live-Agent|实测\s+Measured|推导\s+Inferred|实测|推导|猜测|Measured|Inferred|Guess)[^\]]*\]",
+    re.IGNORECASE,
+)
+
+
 def load_custom_banned(workspace_root: Path) -> list[str]:
     roots = [get_pstack_home()]
     if workspace_root not in roots:
@@ -53,7 +76,7 @@ def strip_code_blocks_preserve_lines(text: str) -> str:
 def strip_inline_markup(line: str) -> str:
     cleaned = re.sub(r"`[^`]+`", "", line)
     cleaned = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", cleaned)
-    cleaned = re.sub(r"\[(?:实测|推导|猜测|Measured|Inferred|Guess)[^\]]*\]", "", cleaned)
+    cleaned = EPISTEMIC_TAG_REGEX.sub("", cleaned)
     return cleaned
 
 
@@ -189,13 +212,12 @@ def verify_file(
                     f"Line {idx} [Sentence Too Long]: 单句超过65字符({len(seg)}字) -> {seg[:35]}..."
                 )
 
-    has_epistemic_tag = re.search(
-        r"\[(?:实测|推导|猜测|Measured|Inferred|Guess)(?:\s+(?:Measured|Inferred|Guess))?\]",
-        raw_text,
+    has_epistemic_tag = any(marker in raw_text for marker in EPISTEMIC_MARKERS) or bool(
+        EPISTEMIC_TAG_REGEX.search(raw_text)
     )
     if not has_epistemic_tag:
         errors.append(
-            "[Epistemic Gate]: 全文缺少证据等级标签（如 [实测 Measured] / [推导 Inferred]），请为关键论断绑定证据。"
+            "[Epistemic Gate]: 全文缺少证据等级标签（如 [离线实测 Offline-Measured] / [沙箱模拟 Sim-Verified] / [真机实测 Live-Agent] / [实测 Measured] / [推导 Inferred]），请为关键论断绑定证据。"
         )
 
     print("=" * 68)
