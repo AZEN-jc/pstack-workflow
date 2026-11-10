@@ -21,6 +21,24 @@ case "$SUBCMD" in
   path)
     exec python3 "$SCRIPT_DIR/pstack_resolver.py" --print-paths
     ;;
+  route)
+    exec python3 "$SCRIPT_DIR/pstack_router.py" route "$@"
+    ;;
+  run)
+    exec python3 "$SCRIPT_DIR/pstack_router.py" run "$@"
+    ;;
+  swarm)
+    exec python3 "$SCRIPT_DIR/pstack_scheduler.py" swarm "$@"
+    ;;
+  arena)
+    exec python3 "$SCRIPT_DIR/pstack_scheduler.py" arena "$@"
+    ;;
+  resume)
+    exec python3 "$SCRIPT_DIR/pstack_scheduler.py" resume "$@"
+    ;;
+  tree)
+    exec python3 "$SCRIPT_DIR/pstack_tree.py" "$@"
+    ;;
   verify)
     VERIFY_MODE="${1:-all}"
     shift || true
@@ -66,7 +84,7 @@ case "$SUBCMD" in
     exec python3 -m unittest discover -s "$PSTACK_HOME_DIR/tests" -q "$@"
     ;;
   *)
-    echo "Usage: pstack <init|status|path|verify|correct|pause|pickup|onboard|export|update|check-update|spawn|log|ban|bench|test> [args...]"
+    echo "Usage: pstack <init|status|path|route|run|swarm|arena|resume|tree|verify|correct|pause|pickup|onboard|export|update|check-update|spawn|log|ban|bench|test> [args...]"
     exit 2
     ;;
 esac

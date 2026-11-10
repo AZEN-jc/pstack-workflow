@@ -24,6 +24,9 @@ register_global_agents() {
 
   mkdir -p "$HOME/.local/bin"
   ln -sfn "$SOURCE_ROOT/scripts/pstack" "$HOME/.local/bin/pstack"
+  ln -sfn "$SOURCE_ROOT/scripts/pstack-router.py" "$HOME/.local/bin/pstack-router"
+  ln -sfn "$SOURCE_ROOT/scripts/pstack-scheduler.py" "$HOME/.local/bin/pstack-scheduler"
+  ln -sfn "$SOURCE_ROOT/scripts/pstack-tree.py" "$HOME/.local/bin/pstack-tree"
   ln -sfn "$SOURCE_ROOT/scripts/pstack-verify.py" "$HOME/.local/bin/pstack-verify"
   ln -sfn "$SOURCE_ROOT/scripts/pstack-correct.py" "$HOME/.local/bin/pstack-correct"
   ln -sfn "$SOURCE_ROOT/scripts/pstack-session.py" "$HOME/.local/bin/pstack-session"
@@ -31,7 +34,7 @@ register_global_agents() {
   ln -sfn "$SOURCE_ROOT/scripts/pstack-bench.py" "$HOME/.local/bin/pstack-bench"
   ln -sfn "$SOURCE_ROOT/scripts/pstack_update.py" "$HOME/.local/bin/pstack-update"
   ln -sfn "$SOURCE_ROOT/scripts/ag-spawn.sh" "$HOME/.local/bin/ag-spawn"
-  echo "[OK] Linked global CLIs in $HOME/.local/bin (pstack, pstack-verify, pstack-correct, pstack-session, pstack-onboard, pstack-bench, pstack-update, ag-spawn)"
+  echo "[OK] Linked global CLIs in $HOME/.local/bin (pstack, pstack-router, pstack-scheduler, pstack-tree, pstack-verify, pstack-correct, pstack-session, pstack-onboard, pstack-bench, pstack-update, ag-spawn)"
 
   local skill_targets=(
     "$HOME/.gemini/config/skills/pstack"
@@ -62,7 +65,7 @@ register_global_agents() {
 
 print_status() {
   echo "===================================================================="
-  echo "PSTACK v2.0 MULTI-AGENT & GLOBAL CLI MOUNT STATUS"
+  echo "PSTACK v3.0 MULTI-AGENT & GLOBAL CLI MOUNT STATUS"
   echo "===================================================================="
   local entries=(
     "Global Anchor (PSTACK_HOME):$HOME/.config/pstack/home"
@@ -124,7 +127,7 @@ inject_target_repo() {
       mkdir -p "$target_abs/.cursor/rules"
       cp "$SOURCE_ROOT/.cursor/rules/pstack.mdc" "$target_abs/.cursor/rules/pstack.mdc"
       python3 "$SOURCE_ROOT/scripts/pstack_resolver.py" --init-skeleton "$target_abs"
-      echo "[OK] Initialized light Pstack v2.0 workspace in $target_abs (overlay -> $SOURCE_ROOT)"
+      echo "[OK] Initialized light Pstack v3.0 workspace in $target_abs (overlay -> $SOURCE_ROOT)"
       echo "STATUS : ALL CHECKS GREEN"
       ;;
     symlink|--symlink)
@@ -134,7 +137,7 @@ inject_target_repo() {
       ln -sfn "$SOURCE_ROOT/.cursor/rules/pstack.mdc" "$target_abs/.cursor/rules/pstack.mdc"
       ln -sfn "$SOURCE_ROOT/scripts" "$target_abs/scripts"
       ln -sfn "$SOURCE_ROOT/.agents" "$target_abs/.agents"
-      echo "[OK] Symlinked Pstack v2.0 multi-agent topology into $target_abs"
+      echo "[OK] Symlinked Pstack v3.0 multi-agent topology into $target_abs"
       echo "STATUS : ALL CHECKS GREEN"
       ;;
     full|--full|copy|--copy|*)
@@ -145,7 +148,7 @@ inject_target_repo() {
       cp -R "$SOURCE_ROOT/scripts/"* "$target_abs/scripts/"
       cp -R "$SOURCE_ROOT/.agents/"* "$target_abs/.agents/"
       chmod +x "$target_abs/scripts/pstack" "$target_abs/scripts/"*.py "$target_abs/scripts/"*.sh
-      echo "[OK] Copied full Pstack v2.0 multi-agent topology into $target_abs"
+      echo "[OK] Copied full Pstack v3.0 multi-agent topology into $target_abs"
       echo "STATUS : ALL CHECKS GREEN"
       ;;
   esac

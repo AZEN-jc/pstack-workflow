@@ -1,14 +1,14 @@
 ---
 name: pstack
 description: >-
-  Autonomous Pstack v2.0 protocol stack dual-engine workflow for Antigravity, Claude Code, Codex, OpenCode, Cursor, WorkBuddy, and Pi.
+  Autonomous Pstack v3.0 protocol stack dual-engine workflow for Antigravity, Claude Code, Codex, OpenCode, Cursor, WorkBuddy, and Pi.
   Enforces Tier 0/1/2 context planning, desktop dual-tab Builder + Independent Verifier isolation, pointer-only briefs,
   empirical decision.tsv logging, Comment Sicko code hygiene, and 4-gate deterministic verification.
 ---
 
-# Pstack v2.0 Universal Multi-Agent Skill
+# Pstack v3.0 Universal Multi-Agent Skill
 
-Activate this skill whenever the user invokes `/pstack`, `/pstack-build`, `/pstack-verify`, `/pstack-pickup`, mentions `pstack` or protocol stack workflow, or requests rigorous bug root-cause isolation, adversarial code review (`/interrogate`), X tech threads (`tech-thread`), or Build-in-Public engineering postmortems.
+Activate this skill whenever the user invokes `/pstack-run`, `/pstack`, `/pstack-build`, `/pstack-verify`, `/pstack-pickup`, mentions `pstack` or protocol stack workflow, or requests rigorous bug root-cause isolation, adversarial code review (`/interrogate`), X tech threads (`tech-thread`), or Build-in-Public engineering postmortems.
 
 ## 1. 3-Tier Self-Discovery & 8-Host Mounts
 
@@ -38,7 +38,7 @@ Activate this skill whenever the user invokes `/pstack`, `/pstack-build`, `/psta
    - Run `pstack verify prep-verifier` to inspect the <= 20 line read-only digest (`active-brief.md`, `[Builder Restate]`, `Runtime Verification Digest`, and `git diff --stat`).
    - Write a 4-tier adversarial verdict (`ACT_ON`, `CONSIDER`, `NOTED`, `DISMISSED` + `VERDICT: PASS | REJECT`) to `.agents/handoffs/verifier-verdict.md`.
    - Run `pstack verify verdict` to validate the verdict and automatically export `.agents/handoffs/output-final.md` (with `> [Builder Restate]` stripped).
-4. **Zero-Token Offline Tooling (`/pstack-pickup`, `correct`, `onboard`, `update`, `bench`, `test`)**:
+4. **Zero-Token Offline Tooling (`pstack run`, `route`, `swarm`, `arena`, `resume`, `tree`, `pickup`, `bench`)**:
    - `pstack pause "<note>"` / `pstack pickup`: Generate and read `.agents/handoffs/session-snapshot.md` (<= 20 lines, with automatic crash log pointer recovery from `.agents/handoffs/logs/`).
    - `pstack verify handoff --fix`: Validate line bounds (`1 <= start <= end <= total_lines`) and auto-heal drifted `file:start-end#symbol_name` pointers via AST/regex resolution.
    - `pstack correct --scan | --code-rule "<regex>" "<reason>" | --prose-ban "<phrase>"`: Promote lessons from `.agents/decision.tsv` into mechanical regex/prose rules.

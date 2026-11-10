@@ -1,10 +1,10 @@
-# Pstack v2.0: Protocol Stack Multi-Agent Harness
+# Pstack v3.0: Protocol Stack Multi-Agent Harness
 
 <p align="center"><b><a href="./README.md">English</a></b> | <b>简体中文</b></p>
 
 <p align="center">
   <a href="https://github.com/AZEN-jc/pstack-workflow/actions/workflows/pstack-ci.yml"><img src="https://github.com/AZEN-jc/pstack-workflow/actions/workflows/pstack-ci.yml/badge.svg" alt="Pstack CI" /></a>
-  <img src="https://img.shields.io/badge/Architecture-Dual--Tab_v2.0_Harness-2563EB?style=flat-square" alt="Architecture" />
+  <img src="https://img.shields.io/badge/Architecture-Dual--Tab_v3.0_Harness-2563EB?style=flat-square" alt="Architecture" />
   <img src="https://img.shields.io/badge/Context_Budget-Tier_0_%E2%89%A4_48_Lines-7C3AED?style=flat-square" alt="Context Budget" />
   <img src="https://img.shields.io/badge/Verification-4_Deterministic_Gates-10B981?style=flat-square" alt="Verification" />
 </p>
@@ -17,22 +17,22 @@
 
 > 面向多智能体协作工作区的确定性协议栈与四重门禁工程约束体系 [离线实测 Offline-Measured]。
 > 放任自流的编程智能体会发明大量冗长客套的会话废话，并在耗尽上下文前堆砌无法运行的补丁。
-> Pstack v2.0 以四重自动化物理门禁与双标签页角色隔离替代脆弱的人性信任。
+> Pstack v3.0 以四重自动化物理门禁与双标签页角色隔离替代脆弱的人性信任。
 > 静态母版库与易变的业务仓库彻底物理隔离，在 8 大本地宿主实现全流程确定性工程约束。
 
 ---
 
-## 1. 通俗原理解析：一分钟看懂 Pstack v2.0 (ELI5: What is Pstack?)
+## 1. 通俗原理解析：一分钟看懂 Pstack v3.0 (ELI5: What is Pstack?)
 
 > **小白一分钟人话版 (TL;DR for Humans)**  
 > 传统多 Agent 协作像几个新手在群聊里互相应酬客套。它们动辄刷屏几百行代码，导致上下文迅速挤爆并频繁报错。  
-> Pstack v2.0 把它重构为工业级协议栈约束。常驻内核控制在 48 行以内。任务派发只传行号范围指针。桌面端双 Tab 分别承担构建与独立盲审，交付产物必须通过四重脚本检验。
+> Pstack v3.0 把它重构为工业级协议栈约束。常驻内核控制在 48 行以内。任务派发只传行号范围指针。桌面端双 Tab 分别承担构建与独立盲审，交付产物必须通过四重脚本检验。
 
 日常使用 AI 编程时，最常遇到的挫败并非模型能力不足，而是缺乏工程纪律。
 初始交接单载荷相对传统全量塞入压缩达 92.5% [离线实测 Offline-Measured]。
 多轮长会话的综合 Token 变化取决于交互轮次与工具调用 [沙箱模拟 Sim-Verified]。
 
-| 典型翻车场景 | 传统多 Agent 协作方式 | Pstack v2.0 确定性解法 | 终态实测收益 [离线实测 Offline-Measured] |
+| 典型翻车场景 | 传统多 Agent 协作方式 | Pstack v3.0 确定性解法 | 终态实测收益 [离线实测 Offline-Measured] |
 | :--- | :--- | :--- | :--- |
 | **满屏客套挤爆窗口** | 互相吹捧并大量输出寒暄废话，长提示词挤占宝贵上下文。 | **Tier 0 极简内核 (≤48行)**。首句强制三行直入主题，草稿顶部强制 3 行复述头。 | 常驻上下文压缩至 ~450 Tokens |
 | **代码大爆炸与坏味道** | 一次性甩出数百行巨额补丁，引入冗余注释与隐藏语法破坏。 | **指针交接单**。主从协作仅传 `file:start-end` 范围指针，严禁贴超 15 行源码。 | 单次交接降至 620 Tokens |
@@ -156,9 +156,9 @@ pstack verify handoff --fix
 
 ```text
 ====================================================================
-PSTACK v2.0 FOUR-GATE VERIFICATION SUITE
+PSTACK v3.0 FOUR-GATE VERIFICATION SUITE
 ====================================================================
-[1/4] Handoff Brief Check   : .agents/handoffs/active-brief.md -> PASS (Schema V2 + Symbol Auto-Heal)
+[1/4] Handoff Brief Check   : .agents/handoffs/active-brief.md -> PASS (Schema V3 + Symbol Auto-Heal)
 [2/4] Prose & Restate Check : .agents/handoffs/output-draft.md -> PASS (Builder Restate + 0 slop)
 [3/4] Comment Sicko & Rules : scripts/ (1 custom rule)         -> PASS (0 violations)
 [4/4] Runtime verify_cmd    : exit=0, sha256=1aefa2e6acf7      -> PASS (evidence-pack.md updated)
@@ -171,13 +171,13 @@ STATUS : ALL 4 HARNESS GATES GREEN (Return Code: 0)
 
 ## 6. 目录拓扑 (Repository Topology)
 
-完整 v2.0/v2.1 升级规范请参阅 [UPGRADE_V2.md](./UPGRADE_V2.md)。
+完整 v3.0 升级规范请参阅 [UPGRADE_V2.md](./UPGRADE_V2.md)。
 
 ```text
 .
 ├── AGENTS.md                        # Antigravity / Codex / OpenCode / Cursor / Pi 极简入口
 ├── CLAUDE.md                        # Claude Code 自动加载入口
-├── UPGRADE_V2.md                    # Pstack v2.0/v2.1 桌面端双角色隔离与可验证工程规范
+├── UPGRADE_V2.md                    # Pstack v3.0 桌面端双角色隔离与可验证工程规范
 ├── benchmarks/                      # 可复现基准测试报告 (latest-report.md, latest-metrics.json)
 ├── tests/                           # 标准库单元测试套件 (test_pstack_harness.py)
 ├── .cursor/rules/pstack.mdc         # Cursor IDE 自动加载规则

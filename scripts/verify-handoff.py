@@ -4,8 +4,10 @@ pstack Handoff Brief & Decision Ledger Verification Harness
 Usage: python3 scripts/verify-handoff.py [brief_file] [--fix] [--ledger .agents/decision.tsv]
 """
 import ast
+import fnmatch
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -53,10 +55,86 @@ def parse_simple_frontmatter(text: str) -> tuple[dict, str]:
             if not val_clean:
                 current_list_key = key
                 meta[key] = []
+            elif val_clean.startswith("[") and val_clean.endswith("]"):
+                current_list_key = None
+                try:
+                    meta[key] = json.loads(val_clean)
+                except json.JSONDecodeError:
+                    meta[key] = [x.strip().strip('"').strip("'") for x in val_clean[1:-1].split(",") if x.strip()]
             else:
                 current_list_key = None
                 meta[key] = val_clean
     return meta, body
+
+
+def _matches_scope(rel_path: str, pattern: str) -> bool:
+    if fnmatch.fnmatch(rel_path, pattern):
+        return True
+    clean_pat = pattern.rstrip("/*")
+    if clean_pat and (rel_path == clean_pat or rel_path.startswith(clean_pat + "/")):
+        return True
+    return False
+
+
+def verify_allowed_paths(brief_path: Path, workspace_root: Path) -> list[str]:
+    if not brief_path.exists():
+        return []
+    meta, _ = parse_simple_frontmatter(brief_path.read_text(encoding="utf-8"))
+    allowed = meta.get("allowed_paths")
+    if not allowed or not isinstance(allowed, list):
+        return []
+
+    proc = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=workspace_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    diff_proc = subprocess.run(
+        ["git", "diff", "--name-only", "HEAD"],
+        cwd=workspace_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    changed_files: set[str] = set()
+    if proc.returncode == 0:
+        for line in proc.stdout.splitlines():
+            if not line.strip():
+                continue
+            raw_target = line[3:].strip()
+            if " -> " in raw_target:
+                raw_target = raw_target.split(" -> ")[1].strip()
+            if raw_target.startswith('"') and raw_target.endswith('"'):
+                raw_target = raw_target[1:-1]
+            changed_files.add(raw_target)
+
+    if diff_proc.returncode == 0:
+        for line in diff_proc.stdout.splitlines():
+            raw = line.strip()
+            if raw.startswith('"') and raw.endswith('"'):
+                raw = raw[1:-1]
+            if raw:
+                changed_files.add(raw)
+
+    errors: list[str] = []
+    ignored_prefixes = (
+        ".agents/worktrees/",
+        ".agents/handoffs/",
+        ".git/",
+    )
+    for raw_target in sorted(changed_files):
+        if any(raw_target.startswith(ign) for ign in ignored_prefixes):
+            continue
+
+        matched = any(_matches_scope(raw_target, pat) for pat in allowed)
+        if not matched:
+            errors.append(
+                f"[Scope Violation]: 文件 `{raw_target}` 超出 allowed_paths 白名单范围 {allowed}"
+            )
+    return errors
 
 
 def parse_evidence_pointer(ptr: str) -> dict[str, object] | None:
@@ -432,12 +510,16 @@ def verify_ledger(ledger_path: Path) -> list[str]:
 def main() -> int:
     args = sys.argv[1:]
     fix_drift = "--fix" in args
+    check_scope = "--check-scope" in args
     ledger_override: Path | None = None
     positional: list[str] = []
     idx = 0
     while idx < len(args):
         tok = args[idx]
         if tok == "--fix":
+            idx += 1
+            continue
+        if tok == "--check-scope":
             idx += 1
             continue
         if tok == "--ledger" and idx + 1 < len(args):
@@ -466,6 +548,8 @@ def main() -> int:
     print(f"PSTACK HANDOFF & LEDGER HARNESS: {brief_path.name} + decision.tsv")
     print("=" * 68)
     errors = verify_brief(brief_path, schema_path, workspace_root, fix_drift=fix_drift) + verify_ledger(ledger_path)
+    if check_scope:
+        errors += verify_allowed_paths(brief_path, workspace_root)
 
     if not errors:
         print("STATUS : ALL CHECKS GREEN (Schema, Pointers & Ledger valid)")

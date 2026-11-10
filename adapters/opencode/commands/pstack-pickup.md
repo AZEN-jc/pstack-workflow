@@ -1,5 +1,5 @@
 ---
-description: Resume Pstack v2.0 context from <= 20 line session snapshot (/pstack-pickup)
+description: Resume Pstack v3.0 context from <= 20 line session snapshot (/pstack-pickup)
 ---
 
 Run `pstack pickup` immediately to load `.agents/handoffs/session-snapshot.md` (`$ARGUMENTS`).

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Unit test suite for Pstack v2.1 Verifiable Engineering Harness.
+Unit test suite for Pstack v3.0 Verifiable Engineering Harness.
 Run via: python3 -m unittest discover -s tests -q
 """
 import importlib.util
@@ -20,13 +20,30 @@ if str(SCRIPTS_DIR) not in sys.path:
 
 from pstack_bench import (
     measure_context_compression,
+    run_abcd_benchmark,
     run_adversarial_mutation_suite,
     run_live_ab_experiment,
     run_sandbox_ab_suite,
 )
 from pstack_onboard import detect_verify_cmd
 from pstack_resolver import ensure_workspace_skeleton, get_pstack_home, get_workspace_root, resolve_asset
+from pstack_router import (
+    auto_discover_pointers_and_scope,
+    classify_goal,
+    generate_brief,
+)
+from pstack_scheduler import (
+    WorktreeSandbox,
+    execute_arena,
+    execute_resume,
+    execute_swarm,
+    load_dag_state,
+)
 from pstack_session import generate_snapshot
+from pstack_tree import (
+    load_tree_data,
+    render_ascii_tree,
+)
 
 
 def _load_mod(name: str, filename: str):
@@ -527,6 +544,199 @@ Test pointer auto healing.
             self.assertIn("User Goal", blind_content)
             self.assertIn("Deliverable Contract", blind_content)
             self.assertNotIn("[Builder Restate]", blind_content)
+
+    def test_router_goal_classification_and_brief_generation(self) -> None:
+        c1 = classify_goal("修复登录超时 Bug")
+        self.assertEqual(c1["intent"], "bug-fix")
+        self.assertEqual(c1["role"], "builder")
+        self.assertEqual(c1["model_tier"], "fast_tier")
+
+        c2 = classify_goal("多阶段并行工作流协同调度")
+        self.assertEqual(c2["intent"], "swarm")
+        self.assertEqual(c2["role"], "coordinator")
+        self.assertEqual(c2["model_tier"], "deep_tier")
+
+        c3 = classify_goal("系统核心架构重组与跨模块深层设计")
+        self.assertEqual(c3["intent"], "architecture-feature")
+        self.assertEqual(c3["role"], "architect")
+        self.assertEqual(c3["model_tier"], "deep_tier")
+
+        c4 = classify_goal("发布推文总结最近提交")
+        self.assertEqual(c4["intent"], "tech-thread")
+        self.assertEqual(c4["role"], "builder")
+        self.assertEqual(c4["model_tier"], "fast_tier")
+
+        c5 = classify_goal("重构清理冗余代码")
+        self.assertEqual(c5["intent"], "refactor")
+        self.assertEqual(c5["role"], "builder")
+        self.assertEqual(c5["model_tier"], "fast_tier")
+
+        c6 = classify_goal("对代码进行独立安全审查")
+        self.assertEqual(c6["intent"], "interrogate")
+        self.assertEqual(c6["role"], "reviewer")
+        self.assertEqual(c6["model_tier"], "deep_tier")
+
+        c7 = classify_goal("新增用户导出报表功能")
+        self.assertEqual(c7["intent"], "architecture-feature")
+        self.assertEqual(c7["role"], "builder")
+        self.assertEqual(c7["model_tier"], "fast_tier")
+
+        c8 = classify_goal("调研 WebGPU 跨平台方案")
+        self.assertEqual(c8["intent"], "figure-it-out")
+        self.assertEqual(c8["role"], "architect")
+        self.assertEqual(c8["model_tier"], "deep_tier")
+
+        pointers1, allowed1 = auto_discover_pointers_and_scope("修复路由 Bug", REPO_ROOT)
+        self.assertTrue(len(pointers1) > 0)
+        self.assertIn("scripts/*", allowed1)
+
+        pointers2, allowed2 = auto_discover_pointers_and_scope(REPO_ROOT, "修复路由 Bug")
+        self.assertEqual(pointers1, pointers2)
+
+        schema_path = REPO_ROOT / ".agents" / "handoffs" / "handoff-schema.json"
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp).resolve()
+            ensure_workspace_skeleton(ws)
+            brief_file = generate_brief("修复登录超时 Bug 并补充单元测试", ws)
+            self.assertTrue(brief_file.is_file())
+            with redirect_stdout(io.StringIO()):
+                errs = verify_handoff.verify_brief(brief_file, schema_path, ws)
+            self.assertEqual(errs, [])
+
+    def test_worktree_sandbox_lifecycle_and_scope_guard(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp).resolve()
+            subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.name", "Tester"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.email", "tester@example.com"], cwd=repo, check=True)
+            (repo / "src").mkdir()
+            (repo / "src" / "app.py").write_text("x = 1\n", encoding="utf-8")
+            subprocess.run(["git", "add", "."], cwd=repo, check=True)
+            subprocess.run(["git", "commit", "-qm", "initial"], cwd=repo, check=True)
+
+            sandbox = WorktreeSandbox("test-node-1", repo)
+            worktree_dir = sandbox.create()
+            self.assertTrue(worktree_dir.is_dir())
+
+            (worktree_dir / "src" / "app.py").write_text("x = 2\n", encoding="utf-8")
+            clean_violations = sandbox.check_scope(["src/*"])
+            self.assertEqual(clean_violations, [])
+
+            (worktree_dir / "bad_file.txt").write_text("leak\n", encoding="utf-8")
+            dirty_violations = sandbox.check_scope(["src/*"])
+            self.assertIn("bad_file.txt", dirty_violations)
+
+            subprocess.run(["git", "add", "."], cwd=worktree_dir, check=True)
+            subprocess.run(["git", "commit", "-qm", "committed leak"], cwd=worktree_dir, check=True)
+            committed_violations = sandbox.check_scope(["src/*"])
+            self.assertIn("bad_file.txt", committed_violations)
+
+            sandbox.cleanup()
+            self.assertFalse(worktree_dir.exists())
+
+    def test_scheduler_swarm_and_resume_execution(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp).resolve()
+            subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.name", "Tester"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.email", "tester@example.com"], cwd=repo, check=True)
+            ensure_workspace_skeleton(repo)
+            (repo / "src").mkdir()
+            (repo / "src" / "app.py").write_text("def run(): pass\n", encoding="utf-8")
+            subprocess.run(["git", "add", "."], cwd=repo, check=True)
+            subprocess.run(["git", "commit", "-qm", "init"], cwd=repo, check=True)
+
+            from pstack_scheduler import topological_sort_nodes
+            cyclic_dag = {
+                "a": {"depends_on": ["b"]},
+                "b": {"depends_on": ["a"]},
+            }
+            with self.assertRaises(ValueError):
+                topological_sort_nodes(cyclic_dag)
+
+            with redirect_stdout(io.StringIO()):
+                rc_swarm = execute_swarm(repo, dry_run=True)
+            self.assertEqual(rc_swarm, 0)
+
+            state_file = repo / ".agents" / "handoffs" / "dag-state.json"
+            self.assertTrue(state_file.is_file())
+            state = load_dag_state(repo)
+            self.assertEqual(state["status"], "completed")
+            self.assertTrue(all(node["status"] == "MERGED" for node in state["nodes"].values()))
+
+            state["nodes"]["node-1"]["status"] = "VERIFIED"
+            state["nodes"]["node-1"]["artifact_sha256"] = None
+            state_file.write_text(importlib.import_module("json").dumps(state), encoding="utf-8")
+
+            with redirect_stdout(io.StringIO()):
+                rc_resume = execute_resume(repo, dry_run=True)
+            self.assertEqual(rc_resume, 0)
+            resumed_state = load_dag_state(repo)
+            self.assertIsNotNone(resumed_state["nodes"]["node-1"]["artifact_sha256"])
+
+    def test_scheduler_arena_and_event_stream(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp).resolve()
+            subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.name", "Tester"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.email", "tester@example.com"], cwd=repo, check=True)
+            ensure_workspace_skeleton(repo)
+            (repo / "src").mkdir()
+            (repo / "src" / "main.py").write_text("x = 10\n", encoding="utf-8")
+            subprocess.run(["git", "add", "."], cwd=repo, check=True)
+            subprocess.run(["git", "commit", "-qm", "init"], cwd=repo, check=True)
+
+            with redirect_stdout(io.StringIO()):
+                rc_arena = execute_arena(repo, candidates=["codex", "opencode"], dry_run=True)
+            self.assertEqual(rc_arena, 0)
+
+            events_file = repo / ".agents" / "handoffs" / "events.jsonl"
+            self.assertTrue(events_file.is_file())
+            _, events = load_tree_data(repo)
+            event_types = [e["event_type"] for e in events]
+            self.assertIn("ARENA_START", event_types)
+            self.assertIn("ARENA_EVALUATION", event_types)
+
+            dag_state = load_dag_state(repo)
+            self.assertEqual(dag_state.get("mode"), "arena")
+            self.assertEqual(dag_state.get("status"), "completed")
+            self.assertIn(dag_state.get("winner"), ["codex", "opencode"])
+            self.assertTrue(any(n["status"] == "WINNER" for n in dag_state["nodes"].values()))
+
+    def test_tree_ascii_rendering(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp).resolve()
+            subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.name", "Tester"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.email", "tester@example.com"], cwd=repo, check=True)
+            ensure_workspace_skeleton(repo)
+            (repo / "src").mkdir()
+            (repo / "src" / "entry.py").write_text("pass\n", encoding="utf-8")
+            subprocess.run(["git", "add", "."], cwd=repo, check=True)
+            subprocess.run(["git", "commit", "-qm", "init"], cwd=repo, check=True)
+
+            with redirect_stdout(io.StringIO()):
+                execute_swarm(repo, dry_run=True)
+            dag_data, events = load_tree_data(repo)
+            tree_text = render_ascii_tree(dag_data, events)
+            self.assertIn("TASK DAG TREE", tree_text)
+            self.assertIn("node-1", tree_text)
+            self.assertIn("node-2", tree_text)
+
+    def test_abcd_randomized_benchmark_matrix(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            out_dir = Path(tmp).resolve()
+            with redirect_stdout(io.StringIO()):
+                results = run_abcd_benchmark(REPO_ROOT, out_dir=out_dir, seed=42)
+            self.assertEqual(len(results), 16)
+            group_names = {r["group"] for r in results}
+            self.assertIn("Group A (Native Codex)", group_names)
+            self.assertIn("Group B (PStack + Codex)", group_names)
+            self.assertIn("Group C (Native OpenCode)", group_names)
+            self.assertIn("Group D (PStack + OpenCode)", group_names)
+            tsv_path = out_dir / "ab-experiments.tsv"
+            self.assertTrue(tsv_path.is_file())
+            self.assertIn("Task 4: multi-module-swarm", tsv_path.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

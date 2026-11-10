@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "PstackHandoffBriefV2",
+  "title": "PstackHandoffBriefV3",
   "description": "Schema for .agents/handoffs/active-brief.md YAML frontmatter and required markdown sections",
   "type": "object",
   "required": [
@@ -14,12 +14,21 @@
   "properties": {
     "task_id": {
       "type": "string",
-      "pattern": "^[a-z0-9-]+$",
+      "pattern": "^[a-z0-9.-]+$",
       "description": "Unique identifier for the task round"
     },
     "role": {
       "type": "string",
-      "enum": ["investigator", "prose-architect", "implementer", "verifier"],
+      "enum": [
+        "investigator",
+        "prose-architect",
+        "implementer",
+        "verifier",
+        "coordinator",
+        "architect",
+        "builder",
+        "reviewer"
+      ],
       "description": "Stateless subagent role"
     },
     "target_agent": {
@@ -42,6 +51,17 @@
     "verify_cmd": {
       "type": "string",
       "description": "Deterministic shell command that must exit 0 before completion"
+    },
+    "allowed_paths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Optional glob whitelist of file patterns this task is permitted to touch"
+    },
+    "model_tier": {
+      "type": "string",
+      "description": "Optional model tier (e.g. fast_tier, deep_tier)"
     }
   },
   "requiredSections": [

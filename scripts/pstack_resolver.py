@@ -28,7 +28,7 @@ verify_cmd: "pstack verify all"
 ---
 
 ## 1. User Goal (Restated)
-当前工作区已完成 Pstack v2.0 轻量级骨架初始化，可随时承接代码实现、架构批判或技术长文任务。
+当前工作区已完成 Pstack v3.0 轻量级骨架初始化，可随时承接代码实现、架构批判或技术长文任务。
 
 ## 2. Consolidated Directives (History & Delta)
 - [Init] 已初始化本地 `.agents/decision.tsv` 与 `.agents/handoffs/` 状态目录，静态规则自动回退至 `PSTACK_HOME`。

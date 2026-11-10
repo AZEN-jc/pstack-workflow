@@ -1,0 +1,52 @@
+{
+  "version": "3.0",
+  "tiers": {
+    "fast_tier": {
+      "description": "Fast low-token tier for simple tasks, auto-routing, and unit fixes",
+      "default_model": "gemini-3.8-flash-high",
+      "providers": {
+        "gemini": "gemini-3.8-flash-high",
+        "openai": "codex-mini",
+        "anthropic": "claude-3-5-haiku",
+        "local": "qwen2.5-coder-7b"
+      }
+    },
+    "deep_tier": {
+      "description": "Deep reasoning tier for complex architecture, reviews, and root-cause analysis",
+      "default_model": "gemini-2.5-pro",
+      "providers": {
+        "gemini": "gemini-2.5-pro",
+        "openai": "codex-max",
+        "anthropic": "claude-3-7-sonnet",
+        "local": "deepseek-r1"
+      }
+    }
+  },
+  "roles": {
+    "coordinator": {
+      "default_tier": "fast_tier",
+      "playbook": ".agents/pstack/playbooks/architecture-feature.md",
+      "description": "Task decomposition, routing, and worktree DAG orchestration"
+    },
+    "architect": {
+      "default_tier": "deep_tier",
+      "playbook": ".agents/pstack/playbooks/architecture-feature.md",
+      "description": "Domain modeling, state invariants, and interface contracts"
+    },
+    "builder": {
+      "default_tier": "fast_tier",
+      "playbook": ".agents/pstack/playbooks/architecture-feature.md",
+      "description": "Code implementation, unit test construction, and minimal diff editing"
+    },
+    "reviewer": {
+      "default_tier": "deep_tier",
+      "playbook": ".agents/pstack/playbooks/interrogate.md",
+      "description": "Adversarial review, edge case interrogation, and defect hunting"
+    },
+    "verifier": {
+      "default_tier": "deep_tier",
+      "playbook": ".agents/pstack/playbooks/interrogate.md",
+      "description": "Independent read-only verification, gate execution, and verdict determination"
+    }
+  }
+}

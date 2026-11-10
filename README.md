@@ -1,10 +1,10 @@
-# Pstack v2.0: Protocol Stack Multi-Agent Harness
+# Pstack v3.0: Protocol Stack Multi-Agent Harness
 
 <p align="center"><b>English</b> | <b><a href="./README_ZH.md">简体中文</a></b></p>
 
 <p align="center">
   <a href="https://github.com/AZEN-jc/pstack-workflow/actions/workflows/pstack-ci.yml"><img src="https://github.com/AZEN-jc/pstack-workflow/actions/workflows/pstack-ci.yml/badge.svg" alt="Pstack CI" /></a>
-  <img src="https://img.shields.io/badge/Architecture-Dual--Tab_v2.0_Harness-2563EB?style=flat-square" alt="Architecture" />
+  <img src="https://img.shields.io/badge/Architecture-Dual--Tab_v3.0_Harness-2563EB?style=flat-square" alt="Architecture" />
   <img src="https://img.shields.io/badge/Context_Budget-Tier_0_%E2%89%A4_48_Lines-7C3AED?style=flat-square" alt="Context Budget" />
   <img src="https://img.shields.io/badge/Verification-4_Deterministic_Gates-10B981?style=flat-square" alt="Verification" />
 </p>
@@ -18,7 +18,7 @@
 > Deterministic protocol stack and 4-gate verification harness for coding agents [Offline-Measured].
 > Left unconstrained, coding agents hallucinate imports and generate verbose conversational filler.
 > They paste unvetted diffs across broken paths before exhausting context windows.
-> Pstack v2.0 replaces conversational trust with 4 mechanical gates and dual-tab role isolation.
+> Pstack v3.0 replaces conversational trust with 4 mechanical gates and dual-tab role isolation.
 > Static playbooks and volatile projects stay physically decoupled across 8 local hosts.
 
 ---
@@ -27,13 +27,13 @@
 
 > **TL;DR for Humans**  
 > Conventional multi-agent setups act like newcomers exchanging pleasantries in group chats. They paste hundreds of code lines, blowing context windows and failing silently.  
-> Pstack v2.0 refactors agent workflows into industrial protocol stack constraints. The core stays under 48 lines. Task handoffs pass range pointers only. Dual desktop tabs isolate building from blind verification under 4 deterministic gates.
+> Pstack v3.0 refactors agent workflows into industrial protocol stack constraints. The core stays under 48 lines. Task handoffs pass range pointers only. Dual desktop tabs isolate building from blind verification under 4 deterministic gates.
 
 AI coding failures stem from poor discipline, not weak models.
 Initial handoff payload compresses by 92.5% [Offline-Measured].
 Multi-turn session token delta depends on conversation depth [Sim-Verified].
 
-| Failure Mode | Conventional Agent Setup | Pstack v2.0 Deterministic Solution | Measured Payoff [Offline-Measured] |
+| Failure Mode | Conventional Agent Setup | Pstack v3.0 Deterministic Solution | Measured Payoff [Offline-Measured] |
 | :--- | :--- | :--- | :--- |
 | **Conversational Bloat** | Excessive politeness and verbose filler exhausting context windows. | **Tier 0 Minimal Core (≤48 lines)**. Immediate 3-line triage, mandatory 3-line draft restate header. | Baseline context compressed to ~450 tokens |
 | **Code Smells & Explosions** | Massive diffs pasted at once, introducing redundant comments and broken syntax. | **Pointer-Only Handoffs**. Handoffs pass `file:start-end` pointers only; code snippets capped at 15 lines. | Per-turn brief drops to 620 tokens |
@@ -157,9 +157,9 @@ See [benchmarks/latest-report.md](./benchmarks/latest-report.md) for full benchm
 
 ```text
 ====================================================================
-PSTACK v2.0 FOUR-GATE VERIFICATION SUITE
+PSTACK v3.0 FOUR-GATE VERIFICATION SUITE
 ====================================================================
-[1/4] Handoff Brief Check   : .agents/handoffs/active-brief.md -> PASS (Schema V2 + Symbol Auto-Heal)
+[1/4] Handoff Brief Check   : .agents/handoffs/active-brief.md -> PASS (Schema V3 + Symbol Auto-Heal)
 [2/4] Prose & Restate Check : .agents/handoffs/output-draft.md -> PASS (Builder Restate + 0 slop)
 [3/4] Comment Sicko & Rules : scripts/ (1 custom rule)         -> PASS (0 violations)
 [4/4] Runtime verify_cmd    : exit=0, sha256=1aefa2e6acf7      -> PASS (evidence-pack.md updated)
@@ -172,13 +172,13 @@ STATUS : ALL 4 HARNESS GATES GREEN (Return Code: 0)
 
 ## 6. Repository Topology
 
-See [UPGRADE_V2.md](./UPGRADE_V2.md) for full v2.0/v2.1 specifications.
+See [UPGRADE_V2.md](./UPGRADE_V2.md) for full v3.0 specifications.
 
 ```text
 .
 ├── AGENTS.md                        # Antigravity / Codex / OpenCode / Cursor / Pi entry
 ├── CLAUDE.md                        # Claude Code entry
-├── UPGRADE_V2.md                    # Pstack v2.0/v2.1 dual-role isolation and upgrade specs
+├── UPGRADE_V2.md                    # Pstack v3.0 dual-role isolation and upgrade specs
 ├── benchmarks/                      # Reproducible benchmark reports (latest-report.md, latest-metrics.json)
 ├── tests/                           # Standard library unit test suite (test_pstack_harness.py)
 ├── .cursor/rules/pstack.mdc         # Cursor IDE rules

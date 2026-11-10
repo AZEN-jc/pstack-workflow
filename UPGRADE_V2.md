@@ -1,4 +1,4 @@
-# Pstack v2.0 架构升级规范：桌面端双角色隔离与零上下文膨胀
+# Pstack v3.0 架构升级规范：通用 Agent 执行、任务自动路由与 Worktree 隔离调度
 
 > 调用者在桌面端同宿主新建两个空白标签页，即可完成生产实现与独立对抗验收 `[离线实测 Offline-Measured]`。
 > 常驻路由内核严格锁定在 48 行以内，彻底杜绝系统提示词挤占业务窗口 `[离线实测 Offline-Measured]`。
@@ -9,9 +9,9 @@
 ## 1. 升级目标与受众感知 (Impact First)
 
 工程团队在日常使用多智能体协作时，无需再把终端输出人肉复制到聊天窗口。
-Pstack v2.0 将协议栈拆分为三级上下文预算与四重机械门禁 `[离线实测 Offline-Measured]`。
+Pstack v3.0 将协议栈拆分为三级上下文预算与四重机械门禁 `[离线实测 Offline-Measured]`。
 
-| 架构维度 | Pstack v1.0 状态 | Pstack v2.0 生产终版 | 实测收益 `[离线实测 Offline-Measured]` |
+| 架构维度 | 早期版本状态 | Pstack v3.0 生产终版 | 实测收益 `[离线实测 Offline-Measured]` |
 | :--- | :--- | :--- | :--- |
 | **常驻上下文预算** | 无硬性行数上限 | **Tier 0 锁定 ≤ 48 行** (`.agents/pstack/pstack-core.md`) | 常驻体积压缩至约 450 Tokens |
 | **桌面端角色隔离** | 依赖外部命令行切换 | **同宿主双 Tab 闭环** (`/pstack-build` + `/pstack-verify`) | 零人肉复制完成跨会话盲审 |
@@ -66,14 +66,14 @@ pstack correct --code-rule "^\s*console\.log\(" "禁止遗留调试 console.log"
 pstack correct --prose-ban "心智负担"
 
 # 4. 断点续传：生成并读取严格 ≤ 20 行的跨窗口快照 (.agents/handoffs/session-snapshot.md)
-pstack pause "v2.0 upgrade complete"
+pstack pause "v3.0 upgrade complete"
 pstack pickup
 
 # 5. 远程同步：自动检查 GitHub 远端更新并全量刷新本机 8 路宿主挂载
 pstack update --check
 pstack update
 
-# 6. 可复现基准测试与符号指针自愈 (v2.1 Verifiable Harness)
+# 6. 路由调度与基准测试 (v3.0 Orchestration & Harness)
 pstack test
 pstack bench
 pstack verify handoff --fix
@@ -83,13 +83,13 @@ pstack verify handoff --fix
 
 ## 5. 端到端验收契约 (Deliverable Verification)
 
-在仓库根目录依次执行以下 7 条命令，返回码均为 `0` 即代表 v2.0/v2.1 升级完备 `[离线实测 Offline-Measured]`：
+在仓库根目录依次执行以下 7 条命令，返回码均为 `0` 即代表 v3.0 升级完备 `[离线实测 Offline-Measured]`：
 
 ```bash
 ./scripts/bootstrap-repo.sh --global && pstack status
 wc -l .agents/pstack/pstack-core.md
 pstack test && pstack bench
-pstack pause "v2.1 upgrade complete" && pstack pickup
+pstack pause "v3.0 upgrade complete" && pstack pickup
 pstack correct --scan && pstack onboard --detect
 pstack verify handoff --fix && pstack verify all && pstack verify prep-verifier --blind && pstack verify verdict
 python3 scripts/verify-prose.py README.md && python3 scripts/verify-prose.py README_ZH.md && python3 scripts/verify-prose.py UPGRADE_V2.md && python3 scripts/verify-prose.py benchmarks/latest-report.md

@@ -1,5 +1,5 @@
 ---
-description: Execute Pstack v2.0 Tab 1 Builder loop (/pstack-build)
+description: Execute Pstack v3.0 Tab 1 Builder loop (/pstack-build)
 ---
 
 Read `.agents/pstack/pstack-core.md` and `.agents/handoffs/active-brief.md` immediately.

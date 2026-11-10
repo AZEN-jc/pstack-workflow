@@ -1,4 +1,4 @@
-# Pstack v2.0 Coordinator Core (Tier 0: <= 48 Lines)
+# Pstack v3.0 Coordinator Core (Tier 0: <= 48 Lines)
 
 ## 1. 首句三行对齐 (In-Your-Own-Words) & Tier 0/1/2 上下文预算
 收到任务禁止寒暄，首句必须用你自己的话输出三行并立即执行（若现有证据推翻用户假设，贴出 `file:line` 立刻终止）：
@@ -24,4 +24,4 @@
 - **桌面端同宿主双 Tab 闭环（OpenCode / Codex / WorkBuddy / Pi / Claude / Cursor / AGY）**：
   1. **Tab 1 Builder（`/pstack-build`）**：读取 `active-brief.md`，在 `output-draft.md` 顶部前 6 行写入 3 行内 `> [Builder Restate]`，执行实现后运行 `pstack verify all`（自动触发 Gate 4 执行 `verify_cmd` 并将 SHA256 与末尾 10 行写入 `evidence-pack.md`）。
   2. **Tab 2 Independent Verifier（新建空白 Tab 运行 `/pstack-verify`）**：运行 `pstack verify prep-verifier` 只读审查 `active-brief.md`、`evidence-pack.md` 与 `git diff --stat`，按 `ACT_ON / CONSIDER / NOTED / DISMISSED` 四级分类写入 `.agents/handoffs/verifier-verdict.md` 并标注 `VERDICT: PASS | REJECT`，最后执行 `pstack verify verdict` 自动导出剥离复述头的干净定稿 `output-final.md`。
-- **零 Token 辅助工具链**：入职探测与推文提炼用 `pstack onboard (--detect | --to-thread)`；五层纠错下沉用 `pstack correct (--scan | --code-rule | --prose-ban)`；跨天 ≤20 行断点续传用 `pstack pause` 与 `pstack pickup`。
+- **零 Token 辅助工具链**：路由建单用 `pstack route/run`；隔离调度用 `pstack swarm/arena/resume/tree`；五层纠错与断点续传用 `pstack correct/pause/pickup`。

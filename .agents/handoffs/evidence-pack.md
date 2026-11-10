@@ -11,15 +11,15 @@
 - Logged into `github.com` via `gh` CLI as `azen07508-debug` with `repo`, `workflow`, `gist` scopes.
 
 ## Runtime Verification Digest
-- **Command**: `python3 -m unittest discover -s tests -q && python3 scripts/verify-handoff.py && python3 scripts/verify-code-slop.py scripts tests` (`[实测 Measured]` at `2026-11-07T17:44:27+08:00`)
-- **Exit Code & Digest**: `exit=0` | `sha256=d669226278a6`
-- **Git Diff Summary**: `16 files changed, 792 insertions(+), 131 deletions(-)`
+- **Command**: `python3 -m unittest discover -s tests -q && python3 scripts/verify-handoff.py && python3 scripts/verify-code-slop.py scripts tests` (`[实测 Measured]` at `2026-11-10T22:40:42+08:00`)
+- **Exit Code & Digest**: `exit=0` | `sha256=0ccc1f3227cf`
+- **Git Diff Summary**: `23 files changed, 891 insertions(+), 119 deletions(-)`
 - **Output Tail**:
 ```text
   ====================================================================
   STATUS : ALL CHECKS GREEN (0 redundant comments, swallowed exceptions, or custom rule hi
   ====================================================================
   ----------------------------------------------------------------------
-  Ran 13 tests in 8.349s
+  Ran 20 tests in 10.995s
   OK
 ```

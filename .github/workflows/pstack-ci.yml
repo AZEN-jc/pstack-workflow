@@ -23,13 +23,20 @@ jobs:
           python-version: "3.11"
 
       - name: Make scripts executable
-        run: chmod +x scripts/pstack scripts/ag-spawn.sh scripts/bootstrap-repo.sh
+        run: chmod +x scripts/pstack scripts/ag-spawn.sh scripts/bootstrap-repo.sh scripts/pstack-router.py scripts/pstack-scheduler.py scripts/pstack-tree.py
 
       - name: Run unit test suite (pstack test)
         run: ./scripts/pstack test
 
-      - name: Run reproducible benchmark & 3-task sandbox A/B suite (pstack bench)
+      - name: Run reproducible benchmark & 4-group sandbox A/B/C/D suite (pstack bench)
         run: ./scripts/pstack bench
+
+      - name: Verify zero-token routing, swarm DAG dry-run, arena dry-run, and tree
+        run: |
+          ./scripts/pstack route "修复登录超时 Bug 并补充单元测试"
+          ./scripts/pstack swarm --dry-run
+          ./scripts/pstack arena --dry-run
+          ./scripts/pstack tree
 
       - name: Verify handoff brief and auto-heal pointers
         run: ./scripts/pstack verify handoff --fix

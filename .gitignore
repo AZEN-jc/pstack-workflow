@@ -11,3 +11,6 @@ venv/
 .agents/handoffs/logs/
 .agents/handoffs/workbuddy-prompt.txt
 .agents/handoffs/blind-review-pack.md
+.agents/worktrees/
+.agents/handoffs/dag-state.json
+.agents/handoffs/events.jsonl

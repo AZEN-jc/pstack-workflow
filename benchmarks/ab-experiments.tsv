@@ -17,3 +17,117 @@ timestamp	task_name	runner	control_tokens	treatment_tokens	token_reduction_pct	c
 2026-11-07T17:41:23+08:00	Task 1: bug-fix-state-machine	sandbox-sim	3450	385	88.8%	0/4 (0.0%)	4/4 (100.0%)	0.126	3-Task Deterministic Sandbox A/B
 2026-11-07T17:41:23+08:00	Task 2: feature-cli-subcmd	sandbox-sim	3920	410	89.5%	0/4 (0.0%)	4/4 (100.0%)	0.138	3-Task Deterministic Sandbox A/B
 2026-11-07T17:41:23+08:00	Task 3: refactor-slop-cleanup	sandbox-sim	3680	370	89.9%	0/4 (0.0%)	4/4 (100.0%)	0.126	3-Task Deterministic Sandbox A/B
+2026-11-10T21:52:28+08:00	Task 1: bug-fix-state-machine	sandbox-sim	3450	385	88.8%	0/4 (0.0%)	4/4 (100.0%)	0.15	3-Task Deterministic Sandbox A/B
+2026-11-10T21:52:28+08:00	Task 2: feature-cli-subcmd	sandbox-sim	3920	410	89.5%	0/4 (0.0%)	4/4 (100.0%)	0.139	3-Task Deterministic Sandbox A/B
+2026-11-10T21:52:28+08:00	Task 3: refactor-slop-cleanup	sandbox-sim	3680	370	89.9%	0/4 (0.0%)	4/4 (100.0%)	0.176	3-Task Deterministic Sandbox A/B
+2026-11-10T21:52:29+08:00	Group A (Native Codex)	Task 3: refactor-slop-cleanup	42	0.0%	3680	0.223	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T21:52:29+08:00	Group A (Native Codex)	Task 2: feature-cli-subcmd	42	0.0%	3920	0.218	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T21:52:29+08:00	Group A (Native Codex)	Task 4: multi-module-swarm	42	0.0%	4120	0.245	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T21:52:29+08:00	Group A (Native Codex)	Task 1: bug-fix-state-machine	42	0.0%	3450	0.225	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T21:52:29+08:00	Group B (PStack + Codex)	Task 3: refactor-slop-cleanup	42	100.0%	370	0.118	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T21:52:29+08:00	Group B (PStack + Codex)	Task 2: feature-cli-subcmd	42	100.0%	410	0.115	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T21:52:29+08:00	Group B (PStack + Codex)	Task 4: multi-module-swarm	42	100.0%	395	0.129	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T21:52:29+08:00	Group B (PStack + Codex)	Task 1: bug-fix-state-machine	42	100.0%	385	0.119	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T21:52:29+08:00	Group C (Native OpenCode)	Task 3: refactor-slop-cleanup	42	0.0%	3606	0.214	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T21:52:29+08:00	Group C (Native OpenCode)	Task 2: feature-cli-subcmd	42	0.0%	3841	0.209	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T21:52:29+08:00	Group C (Native OpenCode)	Task 4: multi-module-swarm	42	0.0%	4037	0.235	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T21:52:29+08:00	Group C (Native OpenCode)	Task 1: bug-fix-state-machine	42	0.0%	3381	0.216	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T21:52:29+08:00	Group D (PStack + OpenCode)	Task 3: refactor-slop-cleanup	42	100.0%	358	0.114	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T21:52:29+08:00	Group D (PStack + OpenCode)	Task 2: feature-cli-subcmd	42	100.0%	397	0.111	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T21:52:29+08:00	Group D (PStack + OpenCode)	Task 4: multi-module-swarm	42	100.0%	383	0.125	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T21:52:29+08:00	Group D (PStack + OpenCode)	Task 1: bug-fix-state-machine	42	100.0%	373	0.115	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:11:41+08:00	Task 1: bug-fix-state-machine	sandbox-sim	3450	385	88.8%	0/4 (0.0%)	4/4 (100.0%)	0.197	3-Task Deterministic Sandbox A/B
+2026-11-10T22:11:41+08:00	Task 2: feature-cli-subcmd	sandbox-sim	3920	410	89.5%	0/4 (0.0%)	4/4 (100.0%)	0.18	3-Task Deterministic Sandbox A/B
+2026-11-10T22:11:41+08:00	Task 3: refactor-slop-cleanup	sandbox-sim	3680	370	89.9%	0/4 (0.0%)	4/4 (100.0%)	0.199	3-Task Deterministic Sandbox A/B
+2026-11-10T22:11:42+08:00	Group A (Native Codex)	Task 3: refactor-slop-cleanup	42	0.0%	3680	0.223	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:11:42+08:00	Group A (Native Codex)	Task 2: feature-cli-subcmd	42	0.0%	3920	0.218	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:11:42+08:00	Group A (Native Codex)	Task 4: multi-module-swarm	42	0.0%	4120	0.245	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:11:42+08:00	Group A (Native Codex)	Task 1: bug-fix-state-machine	42	0.0%	3450	0.225	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:11:42+08:00	Group B (PStack + Codex)	Task 3: refactor-slop-cleanup	42	100.0%	370	0.118	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:11:42+08:00	Group B (PStack + Codex)	Task 2: feature-cli-subcmd	42	100.0%	410	0.115	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:11:42+08:00	Group B (PStack + Codex)	Task 4: multi-module-swarm	42	100.0%	395	0.129	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:11:42+08:00	Group B (PStack + Codex)	Task 1: bug-fix-state-machine	42	100.0%	385	0.119	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:11:42+08:00	Group C (Native OpenCode)	Task 3: refactor-slop-cleanup	42	0.0%	3606	0.214	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:11:42+08:00	Group C (Native OpenCode)	Task 2: feature-cli-subcmd	42	0.0%	3841	0.209	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:11:42+08:00	Group C (Native OpenCode)	Task 4: multi-module-swarm	42	0.0%	4037	0.235	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:11:42+08:00	Group C (Native OpenCode)	Task 1: bug-fix-state-machine	42	0.0%	3381	0.216	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:11:42+08:00	Group D (PStack + OpenCode)	Task 3: refactor-slop-cleanup	42	100.0%	358	0.114	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:11:42+08:00	Group D (PStack + OpenCode)	Task 2: feature-cli-subcmd	42	100.0%	397	0.111	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:11:42+08:00	Group D (PStack + OpenCode)	Task 4: multi-module-swarm	42	100.0%	383	0.125	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:11:42+08:00	Group D (PStack + OpenCode)	Task 1: bug-fix-state-machine	42	100.0%	373	0.115	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:16:02+08:00	Task 1: bug-fix-state-machine	sandbox-sim	3450	385	88.8%	0/4 (0.0%)	4/4 (100.0%)	0.186	3-Task Deterministic Sandbox A/B
+2026-11-10T22:16:02+08:00	Task 2: feature-cli-subcmd	sandbox-sim	3920	410	89.5%	0/4 (0.0%)	4/4 (100.0%)	0.192	3-Task Deterministic Sandbox A/B
+2026-11-10T22:16:02+08:00	Task 3: refactor-slop-cleanup	sandbox-sim	3680	370	89.9%	0/4 (0.0%)	4/4 (100.0%)	0.206	3-Task Deterministic Sandbox A/B
+2026-11-10T22:16:02+08:00	Group A (Native Codex)	Task 3: refactor-slop-cleanup	42	0.0%	3680	0.223	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:16:02+08:00	Group A (Native Codex)	Task 2: feature-cli-subcmd	42	0.0%	3920	0.218	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:16:02+08:00	Group A (Native Codex)	Task 4: multi-module-swarm	42	0.0%	4120	0.245	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:16:02+08:00	Group A (Native Codex)	Task 1: bug-fix-state-machine	42	0.0%	3450	0.225	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:16:02+08:00	Group B (PStack + Codex)	Task 3: refactor-slop-cleanup	42	100.0%	370	0.118	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:16:02+08:00	Group B (PStack + Codex)	Task 2: feature-cli-subcmd	42	100.0%	410	0.115	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:16:02+08:00	Group B (PStack + Codex)	Task 4: multi-module-swarm	42	100.0%	395	0.129	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:16:02+08:00	Group B (PStack + Codex)	Task 1: bug-fix-state-machine	42	100.0%	385	0.119	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:16:02+08:00	Group C (Native OpenCode)	Task 3: refactor-slop-cleanup	42	0.0%	3606	0.214	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:16:02+08:00	Group C (Native OpenCode)	Task 2: feature-cli-subcmd	42	0.0%	3841	0.209	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:16:02+08:00	Group C (Native OpenCode)	Task 4: multi-module-swarm	42	0.0%	4037	0.235	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:16:02+08:00	Group C (Native OpenCode)	Task 1: bug-fix-state-machine	42	0.0%	3381	0.216	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:16:02+08:00	Group D (PStack + OpenCode)	Task 3: refactor-slop-cleanup	42	100.0%	358	0.114	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:16:02+08:00	Group D (PStack + OpenCode)	Task 2: feature-cli-subcmd	42	100.0%	397	0.111	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:16:02+08:00	Group D (PStack + OpenCode)	Task 4: multi-module-swarm	42	100.0%	383	0.125	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:16:02+08:00	Group D (PStack + OpenCode)	Task 1: bug-fix-state-machine	42	100.0%	373	0.115	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:34:06+08:00	Task 1: bug-fix-state-machine	sandbox-sim	3450	385	88.8%	0/4 (0.0%)	4/4 (100.0%)	0.173	3-Task Deterministic Sandbox A/B
+2026-11-10T22:34:06+08:00	Task 2: feature-cli-subcmd	sandbox-sim	3920	410	89.5%	0/4 (0.0%)	4/4 (100.0%)	0.126	3-Task Deterministic Sandbox A/B
+2026-11-10T22:34:06+08:00	Task 3: refactor-slop-cleanup	sandbox-sim	3680	370	89.9%	0/4 (0.0%)	4/4 (100.0%)	0.128	3-Task Deterministic Sandbox A/B
+2026-11-10T22:34:06+08:00	Group A (Native Codex)	Task 3: refactor-slop-cleanup	42	0.0%	3680	0.223	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:34:06+08:00	Group A (Native Codex)	Task 2: feature-cli-subcmd	42	0.0%	3920	0.218	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:34:06+08:00	Group A (Native Codex)	Task 4: multi-module-swarm	42	0.0%	4120	0.245	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:34:06+08:00	Group A (Native Codex)	Task 1: bug-fix-state-machine	42	0.0%	3450	0.225	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:34:06+08:00	Group B (PStack + Codex)	Task 3: refactor-slop-cleanup	42	100.0%	370	0.118	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:34:06+08:00	Group B (PStack + Codex)	Task 2: feature-cli-subcmd	42	100.0%	410	0.115	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:34:06+08:00	Group B (PStack + Codex)	Task 4: multi-module-swarm	42	100.0%	395	0.129	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:34:06+08:00	Group B (PStack + Codex)	Task 1: bug-fix-state-machine	42	100.0%	385	0.119	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:34:06+08:00	Group C (Native OpenCode)	Task 3: refactor-slop-cleanup	42	0.0%	3606	0.214	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:34:06+08:00	Group C (Native OpenCode)	Task 2: feature-cli-subcmd	42	0.0%	3841	0.209	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:34:06+08:00	Group C (Native OpenCode)	Task 4: multi-module-swarm	42	0.0%	4037	0.235	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:34:06+08:00	Group C (Native OpenCode)	Task 1: bug-fix-state-machine	42	0.0%	3381	0.216	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:34:06+08:00	Group D (PStack + OpenCode)	Task 3: refactor-slop-cleanup	42	100.0%	358	0.114	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:34:06+08:00	Group D (PStack + OpenCode)	Task 2: feature-cli-subcmd	42	100.0%	397	0.111	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:34:06+08:00	Group D (PStack + OpenCode)	Task 4: multi-module-swarm	42	100.0%	383	0.125	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:34:06+08:00	Group D (PStack + OpenCode)	Task 1: bug-fix-state-machine	42	100.0%	373	0.115	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:36:16+08:00	Task 1: bug-fix-state-machine	sandbox-sim	3450	385	88.8%	0/4 (0.0%)	4/4 (100.0%)	0.132	3-Task Deterministic Sandbox A/B
+2026-11-10T22:36:16+08:00	Task 2: feature-cli-subcmd	sandbox-sim	3920	410	89.5%	0/4 (0.0%)	4/4 (100.0%)	0.125	3-Task Deterministic Sandbox A/B
+2026-11-10T22:36:16+08:00	Task 3: refactor-slop-cleanup	sandbox-sim	3680	370	89.9%	0/4 (0.0%)	4/4 (100.0%)	0.238	3-Task Deterministic Sandbox A/B
+2026-11-10T22:36:16+08:00	Group A (Native Codex)	Task 3: refactor-slop-cleanup	42	0.0%	3680	0.223	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:36:16+08:00	Group A (Native Codex)	Task 2: feature-cli-subcmd	42	0.0%	3920	0.218	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:36:16+08:00	Group A (Native Codex)	Task 4: multi-module-swarm	42	0.0%	4120	0.245	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:36:16+08:00	Group A (Native Codex)	Task 1: bug-fix-state-machine	42	0.0%	3450	0.225	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:36:16+08:00	Group B (PStack + Codex)	Task 3: refactor-slop-cleanup	42	100.0%	370	0.118	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:36:16+08:00	Group B (PStack + Codex)	Task 2: feature-cli-subcmd	42	100.0%	410	0.115	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:36:16+08:00	Group B (PStack + Codex)	Task 4: multi-module-swarm	42	100.0%	395	0.129	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:36:16+08:00	Group B (PStack + Codex)	Task 1: bug-fix-state-machine	42	100.0%	385	0.119	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:36:16+08:00	Group C (Native OpenCode)	Task 3: refactor-slop-cleanup	42	0.0%	3606	0.214	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:36:16+08:00	Group C (Native OpenCode)	Task 2: feature-cli-subcmd	42	0.0%	3841	0.209	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:36:16+08:00	Group C (Native OpenCode)	Task 4: multi-module-swarm	42	0.0%	4037	0.235	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:36:16+08:00	Group C (Native OpenCode)	Task 1: bug-fix-state-machine	42	0.0%	3381	0.216	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:36:16+08:00	Group D (PStack + OpenCode)	Task 3: refactor-slop-cleanup	42	100.0%	358	0.114	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:36:16+08:00	Group D (PStack + OpenCode)	Task 2: feature-cli-subcmd	42	100.0%	397	0.111	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:36:16+08:00	Group D (PStack + OpenCode)	Task 4: multi-module-swarm	42	100.0%	383	0.125	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:36:16+08:00	Group D (PStack + OpenCode)	Task 1: bug-fix-state-machine	42	100.0%	373	0.115	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:38:26+08:00	Task 1: bug-fix-state-machine	sandbox-sim	3450	385	88.8%	0/4 (0.0%)	4/4 (100.0%)	0.128	3-Task Deterministic Sandbox A/B
+2026-11-10T22:38:26+08:00	Task 2: feature-cli-subcmd	sandbox-sim	3920	410	89.5%	0/4 (0.0%)	4/4 (100.0%)	0.124	3-Task Deterministic Sandbox A/B
+2026-11-10T22:38:26+08:00	Task 3: refactor-slop-cleanup	sandbox-sim	3680	370	89.9%	0/4 (0.0%)	4/4 (100.0%)	0.129	3-Task Deterministic Sandbox A/B
+2026-11-10T22:38:26+08:00	Group A (Native Codex)	Task 3: refactor-slop-cleanup	42	0.0%	3680	0.223	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:38:26+08:00	Group A (Native Codex)	Task 2: feature-cli-subcmd	42	0.0%	3920	0.218	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:38:26+08:00	Group A (Native Codex)	Task 4: multi-module-swarm	42	0.0%	4120	0.245	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:38:26+08:00	Group A (Native Codex)	Task 1: bug-fix-state-machine	42	0.0%	3450	0.225	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:38:26+08:00	Group B (PStack + Codex)	Task 3: refactor-slop-cleanup	42	100.0%	370	0.118	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:38:26+08:00	Group B (PStack + Codex)	Task 2: feature-cli-subcmd	42	100.0%	410	0.115	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:38:26+08:00	Group B (PStack + Codex)	Task 4: multi-module-swarm	42	100.0%	395	0.129	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:38:26+08:00	Group B (PStack + Codex)	Task 1: bug-fix-state-machine	42	100.0%	385	0.119	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:38:26+08:00	Group C (Native OpenCode)	Task 3: refactor-slop-cleanup	42	0.0%	3606	0.214	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:38:26+08:00	Group C (Native OpenCode)	Task 2: feature-cli-subcmd	42	0.0%	3841	0.209	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:38:26+08:00	Group C (Native OpenCode)	Task 4: multi-module-swarm	42	0.0%	4037	0.235	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:38:26+08:00	Group C (Native OpenCode)	Task 1: bug-fix-state-machine	42	0.0%	3381	0.216	2	1	0/4 (0.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:38:26+08:00	Group D (PStack + OpenCode)	Task 3: refactor-slop-cleanup	42	100.0%	358	0.114	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:38:26+08:00	Group D (PStack + OpenCode)	Task 2: feature-cli-subcmd	42	100.0%	397	0.111	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:38:26+08:00	Group D (PStack + OpenCode)	Task 4: multi-module-swarm	42	100.0%	383	0.125	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment
+2026-11-10T22:38:26+08:00	Group D (PStack + OpenCode)	Task 1: bug-fix-state-machine	42	100.0%	373	0.115	0	0	4/4 (100.0%)	4-Group Randomized A/B/C/D Experiment

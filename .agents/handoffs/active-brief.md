@@ -1,6 +1,6 @@
 ---
-task_id: "pstack-v2.2-empirical-ci-harness"
-role: "implementer"
+task_id: "pstack-v3.0-universal-orchestration-engine"
+role: "coordinator"
 target_agent: "antigravity"
 playbook: ".agents/pstack/playbooks/architecture-feature.md"
 required_principles:
@@ -8,29 +8,38 @@ required_principles:
   - ".agents/pstack/principles/no-comments.md"
   - ".agents/pstack/principles/unslop-zh-en.md"
 verify_cmd: "python3 -m unittest discover -s tests -q && python3 scripts/verify-handoff.py && python3 scripts/verify-code-slop.py scripts tests"
+allowed_paths:
+  - ".agents/*"
+  - ".github/*"
+  - "adapters/*"
+  - "benchmarks/*"
+  - "scripts/*"
+  - "tests/*"
+  - "README.md"
+  - "README_ZH.md"
+  - "UPGRADE_V2.md"
+model_tier: "deep_tier"
 ---
 
 ## 1. User Goal (Restated)
-根据 Pstack v2.2 演进计划与评审意见，补全实证可信闭环：落地三级实证标签（离线/沙箱/真机）、原子级半写入隔离与混沌故障注入、严格盲审模式（--blind）、3-Task 确定性沙箱 A/B 评测套件及 GitHub Actions 自动公证流水线。
+构建 Pstack v3.0 通用 Agent 自动路由与 Worktree 隔离调度引擎，解决 Cursor 官方 PStack 深度绑定生态、缺少确定性物理隔离和机械门禁的问题，实现一句话目标自动意图分类建单、五角色模型矩阵路由、Swarm 并行 Worktree DAG 与 Arena 竞技调度、四组 ABCD 随机化对照基准以及 CLI 任务树与事件流可观测性。
 
 ## 2. Consolidated Directives (History & Delta)
-- [Module 1: 3-Tier Epistemic Honesty] 升级 `scripts/verify-prose.py` 支持三级标签，更新 README 及 benchmark 报告消除指标混淆。
-- [Module 2: Atomic Dirty-Tree Quarantine & Chaos Tests] 升级 `scripts/ag-spawn.sh` 与 `pstack_session.py` 实现崩溃与超时半写入自动剥离与恢复，并在 `tests/test_pstack_harness.py` 补充混沌测试。
-- [Module 3: Blind Verifier & 3-Task Sandbox Suite] 升级 `scripts/pstack-verify.py` 支持 `--blind` 严格盲审（<=25行），并在 `scripts/pstack_bench.py` 落地 3-Task 确定性沙箱对照实验。
-- [Module 4: GitHub Actions CI] 落地 `.github/workflows/pstack-ci.yml` 自动化公证流水线与 CI 徽章。
+- [Module 1: Task Router & Model Matrix] 落地 `.agents/pstack/models.json`、`scripts/pstack_router.py`，支持 `pstack route` 与 `pstack run` 毫秒级意图识别、模型分流与自动交接单生成。
+- [Module 2: Worktree Scheduler] 落地 `scripts/pstack_scheduler.py`，实现 `WorktreeSandbox` 物理隔离、`allowed_paths` 越权修改拦截、`Swarm` DAG 并行拓扑合入、`Arena` 择优竞技与 `dag-state.json` 断点续跑。
+- [Module 3: ABCD Benchmark] 升级 `scripts/pstack_bench.py` 支持 A/B/C/D 四组随机化对照实验（Native Codex/OpenCode vs Pstack+Codex/OpenCode），评测成功率、耗时、Token 与返工次数。
+- [Module 4: Observability & Version Unification] 落地 `scripts/pstack_tree.py` 与 `events.jsonl` 事件流协议，全仓统一升级至 `Pstack v3.0`。
 
 ## 3. Evidence Pointers (Read-Only Context)
-- 三级实证校验器：`scripts/verify-prose.py:76-80#strip_inline_markup`
-- 跨客户端派发与隔离：`scripts/ag-spawn.sh:233-317#run_with_timeout_and_log`
-- 会话快照与隔离记录：`scripts/pstack_session.py:112-147#generate_snapshot`
-- 严格盲审模式实现：`scripts/pstack-verify.py:147-275#prep_verifier_digest`
-- 确定性基准评测套件：`scripts/pstack_bench.py:687-770#run_live_ab_experiment`
-- 自动化测试用例：`tests/test_pstack_harness.py:261-303#TestPstackHarness.test_spawner_workbuddy_and_crash_trap`
+- 自动路由与意图分类实现：`scripts/pstack_router.py:99-156#classify_goal`
+- 符号与上下文自动发现：`scripts/pstack_router.py:178-268#auto_discover_pointers_and_scope`
+- 物理 Worktree 隔离沙箱：`scripts/pstack_scheduler.py:66-200#WorktreeSandbox`
+- 任务树终端可视化引擎：`scripts/pstack_tree.py:15-64#render_ascii_tree`
+- 自动化门禁测试套件：`tests/test_pstack_harness.py:548-604#TestPstackHarness.test_router_goal_classification_and_brief_generation`
 
 ## 4. Deliverable Contract
-1. `python3 -m unittest discover -s tests -q` 与新增的混沌故障注入测试全部通过。
-2. `scripts/ag-spawn.sh` 在进程崩溃或超时后自动导出 `crash-partial-*.patch` 并清理脏树。
-3. `pstack verify prep-verifier --blind` 输出 strictly <= 25 行并写入 `blind-review-pack.md`。
-4. `pstack bench` 运行 3-Task 确定性沙箱评测并更新 `benchmarks/latest-report.md` 与 metrics。
+1. `python3 -m unittest discover -s tests -q` 20 项单元测试全部通过。
+2. `pstack route "修复状态机异常" --json` 准确输出意图分类与模型路由。
+3. `pstack swarm --dry-run`、`pstack arena --dry-run`、`pstack tree` 正常运行。
+4. `pstack bench` 完成 ABCD 评测并在 `benchmarks/latest-report.md` 生成完整报告。
 5. `pstack verify all && pstack verify prep-verifier --blind && pstack verify verdict` 全部返回码 0。
-6. GitHub Actions CI 配置文件 `.github/workflows/pstack-ci.yml` 正常生效。

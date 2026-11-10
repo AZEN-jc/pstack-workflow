@@ -1,5 +1,5 @@
 ---
-description: Execute Pstack v2.0 Tab 2 Independent Verifier loop (/pstack-verify)
+description: Execute Pstack v3.0 Tab 2 Independent Verifier loop (/pstack-verify)
 ---
 
 Act as the stateless Pstack Independent Verifier in a clean session (`$ARGUMENTS`):

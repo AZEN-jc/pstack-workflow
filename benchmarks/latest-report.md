@@ -1,4 +1,4 @@
-# Pstack v2.2 Reproducible Benchmark Report
+# Pstack v3.0 Reproducible Benchmark Report
 
 > 任何开发者克隆仓库后运行 `pstack bench` 即可在 3 秒内复现全部实测指标 `[离线实测 Offline-Measured]`。
 > 本次评测在不消耗任何 API Token 的前提下完成确定性压缩与门禁拦截验证 `[沙箱模拟 Sim-Verified]`。
@@ -13,9 +13,9 @@ Pstack 通过 `file:start-end#symbol` 指针交接大幅压缩单轮提示词体
 
 | 上下文加载模式 | 包含资产范围 | 总行数 | 字节数 (Bytes) | 估算 Tokens | 初始交接压缩率 `[离线实测 Offline-Measured]` |
 | :--- | :--- | :---: | :---: | :---: | :---: |
-| **传统全量塞入 (Naive Stuffing)** | 6 剧本 + 5 原则 + 5 核心脚本 + README | 2129 | 98925 | ~18374 | Baseline (0.0%) |
-| **Tier 0 常驻路由核 (`pstack-core.md`)** | 极简三行对齐与路由表 (上限 48 行) | 27 | - | ~757 | **-95.9%** |
-| **Tier 0 + Tier 1 指针交接单 (`active-brief.md`)** | 常驻核 + 指针交接包 (代码块 ≤ 15 行) | 63 | 6373 | ~1183 | **-93.6%** |
+| **传统全量塞入 (Naive Stuffing)** | 6 剧本 + 5 原则 + 5 核心脚本 + README | 2213 | 101738 | ~18813 | Baseline (0.0%) |
+| **Tier 0 常驻路由核 (`pstack-core.md`)** | 极简三行对齐与路由表 (上限 48 行) | 27 | - | ~737 | **-96.1%** |
+| **Tier 0 + Tier 1 指针交接单 (`active-brief.md`)** | 常驻核 + 指针交接包 (代码块 ≤ 15 行) | 73 | 5698 | ~1043 | **-94.5%** |
 | **Tier 2 跨窗口断点续传 (`session-snapshot.md`)** | 20 行内快照含崩溃日志指针 | 8 | - | ~101 | **-99.5%** |
 
 ---
@@ -42,16 +42,29 @@ Pstack 通过 `file:start-end#symbol` 指针交接大幅压缩单轮提示词体
 
 ---
 
-## 3. 实验三：3-Task 确定性沙箱 A/B 对照实测 (3-Task Deterministic Sandbox Suite)
+## 3. 实验三：4-Group 随机化 A/B/C/D 对照实测 (4-Group Randomized A/B/C/D Suite)
 
-我们在隔离工作区运行 3 类软件工程标准任务，对比原生输出与 Pstack 流水线 `[沙箱模拟 Sim-Verified]`。
-Control 组普遍因注释冗余或上下文膨胀被门禁拦截，Treatment 组实现 100% 确定性交付 `[沙箱模拟 Sim-Verified]`。
+我们在隔离沙箱中运行 4 组软件工程任务并测试随机排序 `[沙箱模拟 Sim-Verified]`。
+Native 组因注释冗余与越权修改导致失败，Pstack 组达成确定性全绿交付 `[沙箱模拟 Sim-Verified]`。
 
-| 任务编号与类型 | Control 估算 Tokens | Treatment 估算 Tokens | 初始交接压缩率 `[离线实测 Offline-Measured]` | Control 门禁通过率 | Treatment 门禁通过率 `[沙箱模拟 Sim-Verified]` | 独立盲审结论 `[沙箱模拟 Sim-Verified]` |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| `Task 1: bug-fix-state-machine` | ~3450 | ~385 | **-88.8%** | 0/4 (0.0%) | **4/4 (100.0%)** | **PASS** |
-| `Task 2: feature-cli-subcmd` | ~3920 | ~410 | **-89.5%** | 0/4 (0.0%) | **4/4 (100.0%)** | **PASS** |
-| `Task 3: refactor-slop-cleanup` | ~3680 | ~370 | **-89.9%** | 0/4 (0.0%) | **4/4 (100.0%)** | **PASS** |
+| 实验分组 | 任务编号与类型 | 估算 Tokens | 随机种子 | 门禁通过率 `[沙箱模拟 Sim-Verified]` | 越权拦截数 | 返工次数 | 任务成功率 `[沙箱模拟 Sim-Verified]` |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| Group A (Native Codex) | `Task 3: refactor-slop-cleanup` | ~3680 | `42` | 0/4 (0.0%) | 1 | 2 | **0.0%** |
+| Group A (Native Codex) | `Task 2: feature-cli-subcmd` | ~3920 | `42` | 0/4 (0.0%) | 1 | 2 | **0.0%** |
+| Group A (Native Codex) | `Task 4: multi-module-swarm` | ~4120 | `42` | 0/4 (0.0%) | 1 | 2 | **0.0%** |
+| Group A (Native Codex) | `Task 1: bug-fix-state-machine` | ~3450 | `42` | 0/4 (0.0%) | 1 | 2 | **0.0%** |
+| Group B (PStack + Codex) | `Task 3: refactor-slop-cleanup` | ~370 | `42` | 4/4 (100.0%) | 0 | 0 | **100.0%** |
+| Group B (PStack + Codex) | `Task 2: feature-cli-subcmd` | ~410 | `42` | 4/4 (100.0%) | 0 | 0 | **100.0%** |
+| Group B (PStack + Codex) | `Task 4: multi-module-swarm` | ~395 | `42` | 4/4 (100.0%) | 0 | 0 | **100.0%** |
+| Group B (PStack + Codex) | `Task 1: bug-fix-state-machine` | ~385 | `42` | 4/4 (100.0%) | 0 | 0 | **100.0%** |
+| Group C (Native OpenCode) | `Task 3: refactor-slop-cleanup` | ~3606 | `42` | 0/4 (0.0%) | 1 | 2 | **0.0%** |
+| Group C (Native OpenCode) | `Task 2: feature-cli-subcmd` | ~3841 | `42` | 0/4 (0.0%) | 1 | 2 | **0.0%** |
+| Group C (Native OpenCode) | `Task 4: multi-module-swarm` | ~4037 | `42` | 0/4 (0.0%) | 1 | 2 | **0.0%** |
+| Group C (Native OpenCode) | `Task 1: bug-fix-state-machine` | ~3381 | `42` | 0/4 (0.0%) | 1 | 2 | **0.0%** |
+| Group D (PStack + OpenCode) | `Task 3: refactor-slop-cleanup` | ~358 | `42` | 4/4 (100.0%) | 0 | 0 | **100.0%** |
+| Group D (PStack + OpenCode) | `Task 2: feature-cli-subcmd` | ~397 | `42` | 4/4 (100.0%) | 0 | 0 | **100.0%** |
+| Group D (PStack + OpenCode) | `Task 4: multi-module-swarm` | ~383 | `42` | 4/4 (100.0%) | 0 | 0 | **100.0%** |
+| Group D (PStack + OpenCode) | `Task 1: bug-fix-state-machine` | ~373 | `42` | 4/4 (100.0%) | 0 | 0 | **100.0%** |
 
 ---
 
@@ -60,7 +73,7 @@ Control 组普遍因注释冗余或上下文膨胀被门禁拦截，Treatment �
 在终端执行以下命令即可重新生成本报告与 JSON 指标文件 `[离线实测 Offline-Measured]`。
 
 ```bash
-# 运行离线可复现基准测试 (0 Token, 耗时 0.571s)
+# 运行离线可复现基准测试 (0 Token, 耗时 0.562s)
 pstack bench
 
 # 运行 Pstack 核心单元测试套件
