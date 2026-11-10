@@ -59,6 +59,28 @@ def load_custom_code_rules(workspace_root: Path) -> list[tuple[str, str, str]]:
     return rules
 
 
+def _git_listed_files(directory: Path) -> list[Path] | None:
+    import subprocess
+
+    proc = subprocess.run(
+        ["git", "-C", str(directory), "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+        capture_output=True,
+    )
+    if proc.returncode != 0:
+        # Inside a git repo a failed listing must fail loudly, not be
+        # mistaken for "no files to check". Outside one, signal fallback.
+        probe = subprocess.run(
+            ["git", "-C", str(directory), "rev-parse", "--is-inside-work-tree"],
+            capture_output=True,
+        )
+        if probe.returncode == 0 and probe.stdout.strip() == b"true":
+            raise RuntimeError(
+                f"git ls-files failed in {directory}: {proc.stderr.decode(errors='replace').strip()}"
+            )
+        return None
+    return [directory / entry for entry in proc.stdout.decode("utf-8", errors="surrogateescape").split("\0") if entry]
+
+
 def collect_files(targets: list[str]) -> list[Path]:
     files: list[Path] = []
     seen: set[Path] = set()
@@ -70,12 +92,32 @@ def collect_files(targets: list[str]) -> list[Path]:
                 seen.add(resolved)
                 files.append(p)
         elif p.is_dir():
-            for sub in sorted(p.rglob("*")):
-                if sub.is_file() and sub.suffix in CODE_EXTENSIONS and not SKIP_DIRS.intersection(sub.parts):
-                    resolved = sub.resolve()
-                    if resolved not in seen:
-                        seen.add(resolved)
-                        files.append(sub)
+            # Inside a git repo, only consider tracked files and untracked
+            # files that are not gitignored. This keeps vendored/ignored
+            # experiment copies out while never dropping tracked files that
+            # later matched an ignore rule.
+            listed = _git_listed_files(p)
+            if listed is not None:
+                candidates = listed
+            else:
+                # Non-git directory: plain recursive scan.
+                candidates = sorted(p.rglob("*"))
+            for sub in candidates:
+                if sub.suffix not in CODE_EXTENSIONS:
+                    continue
+                # SKIP_DIRS applies to path segments relative to the target dir.
+                try:
+                    rel_parts = sub.relative_to(p).parts
+                except ValueError:
+                    rel_parts = sub.parts
+                if SKIP_DIRS.intersection(rel_parts):
+                    continue
+                if not sub.is_file():
+                    continue
+                resolved = sub.resolve()
+                if resolved not in seen:
+                    seen.add(resolved)
+                    files.append(sub)
     return files
 
 

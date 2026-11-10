@@ -217,6 +217,41 @@ Test pointer auto healing.
             self.assertIn("[Swallowed Exception]", joined)
             self.assertIn("[Custom Rule:ban-forbidden]", joined)
 
+    def test_code_slop_collect_files_respects_gitignore(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp) / "repo with space"
+            repo.mkdir()
+            subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.email", "a@a"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.name", "a"], cwd=repo, check=True)
+            (repo / ".gitignore").write_text("ignored.py\nnode_modules/\n")
+            (repo / "tracked.py").write_text("x = 1\n")
+            (repo / "ignored.py").write_text("x = 2\n")
+            (repo / "new file.py").write_text("x = 3\n")
+            dep = repo / "node_modules" / "dep.py"
+            dep.parent.mkdir()
+            dep.write_text("x = 4\n")
+            (repo / "later-ignored.py").write_text("x = 5\n")
+            subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
+            subprocess.run(["git", "commit", "-qm", "init"], cwd=repo, check=True)
+            with open(repo / ".gitignore", "a") as fh:
+                fh.write("later-ignored.py\n")
+
+            names = [f.name for f in verify_code_slop.collect_files([str(repo)])]
+            self.assertIn("tracked.py", names)
+            self.assertIn("new file.py", names)
+            self.assertIn("later-ignored.py", names)
+            self.assertNotIn("ignored.py", names)
+            self.assertNotIn("dep.py", names)
+
+            explicit = [f.name for f in verify_code_slop.collect_files([str(repo / "ignored.py")])]
+            self.assertEqual(explicit, ["ignored.py"])
+
+            plain = Path(tmp) / "plain"
+            plain.mkdir()
+            (plain / "b.py").write_text("x = 1\n")
+            self.assertIn("b.py", [f.name for f in verify_code_slop.collect_files([str(plain)])])
+
     def test_session_snapshot_budget_and_crash_log(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             ws = Path(tmp).resolve()
