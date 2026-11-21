@@ -1,5 +1,5 @@
 ---
-task_id: "pstack-v3.0-universal-orchestration-engine"
+task_id: "pstack-v3.1-kernel-hardening"
 role: "coordinator"
 target_agent: "antigravity"
 playbook: ".agents/pstack/playbooks/architecture-feature.md"
@@ -22,24 +22,23 @@ model_tier: "deep_tier"
 ---
 
 ## 1. User Goal (Restated)
-构建 Pstack v3.0 通用 Agent 自动路由与 Worktree 隔离调度引擎，解决 Cursor 官方 PStack 深度绑定生态、缺少确定性物理隔离和机械门禁的问题，实现一句话目标自动意图分类建单、五角色模型矩阵路由、Swarm 并行 Worktree DAG 与 Arena 竞技调度、四组 ABCD 随机化对照基准以及 CLI 任务树与事件流可观测性。
+落地 Pstack v3.1 四大内核硬化模块：中英双语 Repo-Map 多语言符号排序发现、真并行 Worktree 层级池与三方 Git 补丁合并、有界自愈自动返工闭环 (`--max-rework`)、以及 Git Pre-Commit 钩子管理器 (`pstack hook`) 与零依赖 Stdio MCP 服务器 (`pstack mcp`)。
 
 ## 2. Consolidated Directives (History & Delta)
-- [Module 1: Task Router & Model Matrix] 落地 `.agents/pstack/models.json`、`scripts/pstack_router.py`，支持 `pstack route` 与 `pstack run` 毫秒级意图识别、模型分流与自动交接单生成。
-- [Module 2: Worktree Scheduler] 落地 `scripts/pstack_scheduler.py`，实现 `WorktreeSandbox` 物理隔离、`allowed_paths` 越权修改拦截、`Swarm` DAG 并行拓扑合入、`Arena` 择优竞技与 `dag-state.json` 断点续跑。
-- [Module 3: ABCD Benchmark] 升级 `scripts/pstack_bench.py` 支持 A/B/C/D 四组随机化对照实验（Native Codex/OpenCode vs Pstack+Codex/OpenCode），评测成功率、耗时、Token 与返工次数。
-- [Module 4: Observability & Version Unification] 落地 `scripts/pstack_tree.py` 与 `events.jsonl` 事件流协议，全仓统一升级至 `Pstack v3.0`。
+- [Module 1: Bilingual Repo-Map] 升级 `scripts/pstack_router.py`，内置中英工程词典与多语言 (`.py/.ts/.tsx/.js/.go/.rs/.sh`) 符号跨文件加权排序，消除中文关键词失明与字母序回退缺陷。
+- [Module 2: Parallel Worktree & 3-Way Merge] 升级 `scripts/pstack_scheduler.py`，新增 `topological_levels` 与 `ThreadPoolExecutor` 同层并发执行，使用 `git apply --3way` 传播非重叠同文件修改与文件删除并捕获 `[Merge Conflict]`。
+- [Module 3: Bounded Auto-Rework] 在 `scripts/pstack_scheduler.py`、`scripts/pstack_router.py` 与 `scripts/ag-spawn.sh` 落地 `run_with_auto_rework` 与 `--max-rework <N>`，自动提取 `[Gate Failure Digest]` 注入简报并拉起全新无状态子 Agent。
+- [Module 4: Hook & MCP Server] 新增 `scripts/pstack_hook.py` (`pstack hook`) 与 `scripts/pstack_mcp.py` (`pstack mcp`)，暴露 5 个 JSON-RPC 2.0 MCP 工具并同步挂载至 `bootstrap-repo.sh`、文档与 CI。
 
 ## 3. Evidence Pointers (Read-Only Context)
-- 自动路由与意图分类实现：`scripts/pstack_router.py:99-156#classify_goal`
-- 符号与上下文自动发现：`scripts/pstack_router.py:178-268#auto_discover_pointers_and_scope`
-- 物理 Worktree 隔离沙箱：`scripts/pstack_scheduler.py:66-200#WorktreeSandbox`
-- 任务树终端可视化引擎：`scripts/pstack_tree.py:15-64#render_ascii_tree`
-- 自动化门禁测试套件：`tests/test_pstack_harness.py:548-604#TestPstackHarness.test_router_goal_classification_and_brief_generation`
+- 任务路由与符号发现：`scripts/pstack_router.py:418-576#auto_discover_pointers_and_scope`
+- 拓扑调度与沙箱合入：`scripts/pstack_scheduler.py:72-235#merge_worktree_to_workspace`
+- 多语言正则大括号跨度：`scripts/verify-handoff.py:284-327#_find_regex_symbol_span`
+- 无状态派发与脏树隔离：`scripts/ag-spawn.sh:103-245#on_spawn_exit`
+- 门禁总控入口：`scripts/pstack-verify.py:342-432#main`
 
 ## 4. Deliverable Contract
-1. `python3 -m unittest discover -s tests -q` 20 项单元测试全部通过。
-2. `pstack route "修复状态机异常" --json` 准确输出意图分类与模型路由。
-3. `pstack swarm --dry-run`、`pstack arena --dry-run`、`pstack tree` 正常运行。
-4. `pstack bench` 完成 ABCD 评测并在 `benchmarks/latest-report.md` 生成完整报告。
-5. `pstack verify all && pstack verify prep-verifier --blind && pstack verify verdict` 全部返回码 0。
+1. 新增并跑通 5 项核心硬化单元测试（总计 25 项测试全部通过）。
+2. `./scripts/pstack mcp --self-test`、`./scripts/pstack hook status`、`./scripts/pstack test` 与 `./scripts/pstack bench` 全部返回码 0。
+3. `python3 scripts/verify-code-slop.py scripts tests` 零违规，`verify-prose.py` 校验文档零违规。
+4. `./scripts/bootstrap-repo.sh --global`、`./scripts/pstack verify handoff --fix`、`./scripts/pstack verify all`、`./scripts/pstack verify prep-verifier --blind` 与 `./scripts/pstack verify verdict` 全部退出码 0。

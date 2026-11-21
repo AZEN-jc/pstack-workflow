@@ -5,6 +5,7 @@ Run via: python3 -m unittest discover -s tests -q
 """
 import importlib.util
 import io
+import json
 import os
 import subprocess
 import sys
@@ -25,6 +26,7 @@ from pstack_bench import (
     run_live_ab_experiment,
     run_sandbox_ab_suite,
 )
+import pstack_hook
 from pstack_onboard import detect_verify_cmd
 from pstack_resolver import ensure_workspace_skeleton, get_pstack_home, get_workspace_root, resolve_asset
 from pstack_router import (
@@ -37,7 +39,11 @@ from pstack_scheduler import (
     execute_arena,
     execute_resume,
     execute_swarm,
+    extract_gate_failure_digest,
     load_dag_state,
+    merge_worktree_to_workspace,
+    run_with_auto_rework,
+    topological_levels,
 )
 from pstack_session import generate_snapshot
 from pstack_tree import (
@@ -737,6 +743,526 @@ Test pointer auto healing.
             tsv_path = out_dir / "ab-experiments.tsv"
             self.assertTrue(tsv_path.is_file())
             self.assertIn("Task 4: multi-module-swarm", tsv_path.read_text(encoding="utf-8"))
+
+    def test_bilingual_repomap_pointer_ranking(self) -> None:
+        pointers, allowed = auto_discover_pointers_and_scope(
+            "修复状态机在超时后的断点恢复异常",
+            REPO_ROOT,
+        )
+        self.assertTrue(len(pointers) > 0)
+        joined = "\n".join(pointers)
+        self.assertNotIn("pstack_bench.py#_load_script_module", joined)
+        self.assertTrue(
+            any(
+                name in joined
+                for name in ("pstack_session.py", "ag-spawn.sh", "pstack_scheduler.py")
+            ),
+            f"Expected state/timeout/session modules in top pointers, got: {pointers}",
+        )
+        self.assertIn("scripts/*", allowed)
+        for ptr in pointers:
+            res = verify_handoff.resolve_and_validate_pointer(ptr, REPO_ROOT)
+            self.assertTrue(res["valid"], f"Invalid discovered pointer {ptr}: {res}")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp).resolve()
+            (ws / "src").mkdir()
+            (ws / "scripts").mkdir()
+            (ws / "pkg").mkdir()
+            (ws / "src" / "session_state.ts").write_text(
+                "export async function resumeTimeoutState(id: string) {\n"
+                "  if (!id) { return false; }\n"
+                "  return true;\n"
+                "}\n"
+                "export const trackTimeoutState = async (id: string): Promise<boolean> => {\n"
+                "  return id.length > 0;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            (ws / "scripts" / "spawn_guard.sh").write_text(
+                "#!/usr/bin/env bash\n"
+                "handle_spawn_timeout() {\n"
+                "  echo timeout\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            (ws / "pkg" / "state_machine.go").write_text(
+                "package pkg\n"
+                "type StateMachine struct{}\n"
+                "func (s *StateMachine) RecoverTimeout() bool {\n"
+                "  return true\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            (ws / "src" / "timeout_state.rs").write_text(
+                "pub(crate) async fn handle_timeout<'a>(key: &'a str) -> &'a str {\n"
+                "    if key.is_empty() {\n"
+                "        return \"empty\";\n"
+                "    }\n"
+                "    key\n"
+                "}\n"
+                "pub const fn compute_timeout_ms(base: u64) -> u64 {\n"
+                "    base * 2\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            multi_ptrs, multi_scope = auto_discover_pointers_and_scope(
+                "修复状态机超时恢复异常",
+                ws,
+            )
+            multi_joined = "\n".join(multi_ptrs)
+            self.assertIn("src/session_state.ts", multi_joined)
+            self.assertIn("resumeTimeoutState", multi_joined)
+            self.assertIn("scripts/spawn_guard.sh", multi_joined)
+            self.assertIn("pkg/state_machine.go", multi_joined)
+            self.assertIn("RecoverTimeout", multi_joined)
+            self.assertIn("src/timeout_state.rs:1-6#handle_timeout", multi_joined)
+            self.assertIn("src/timeout_state.rs:7-9#compute_timeout_ms", multi_joined)
+            self.assertIn("src/*", multi_scope)
+            self.assertIn("scripts/*", multi_scope)
+            self.assertIn("pkg/*", multi_scope)
+            for ptr in multi_ptrs:
+                res = verify_handoff.resolve_and_validate_pointer(ptr, ws)
+                self.assertTrue(res["valid"], f"Invalid multi-lang pointer {ptr}: {res}")
+                self.assertIsNone(res["drift_note"], f"Unexpected drift on {ptr}: {res}")
+
+            hook_ptrs, _ = auto_discover_pointers_and_scope("修复预提交钩子权限", REPO_ROOT)
+            self.assertTrue(
+                any("pstack_hook.py" in p for p in hook_ptrs),
+                f"Expected pstack_hook.py in top pointers for pre-commit hook query, got: {hook_ptrs}",
+            )
+
+    def test_parallel_swarm_and_3way_git_merge(self) -> None:
+        levels = topological_levels(
+            {
+                "node-a": {"depends_on": []},
+                "node-b": {"depends_on": []},
+                "node-c": {"depends_on": ["node-a", "node-b"]},
+            }
+        )
+        self.assertEqual(levels, [["node-a", "node-b"], ["node-c"]])
+
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp).resolve()
+            subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.name", "Tester"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.email", "tester@example.com"], cwd=repo, check=True)
+            ensure_workspace_skeleton(repo)
+
+            (repo / "src").mkdir()
+            shared_lines = [f"LINE_{i} = {i}" for i in range(1, 21)]
+            (repo / "src" / "shared.py").write_text("\n".join(shared_lines) + "\n", encoding="utf-8")
+            (repo / "src" / "obsolete.py").write_text("OLD = 1\n", encoding="utf-8")
+            subprocess.run(["git", "add", "."], cwd=repo, check=True)
+            subprocess.run(["git", "commit", "-qm", "init"], cwd=repo, check=True)
+
+            spec_path = repo / "swarm-spec.json"
+            cmd_a = (
+                "python3 -c 'from pathlib import Path; "
+                "p = Path(\"src/shared.py\"); "
+                "ls = p.read_text().splitlines(); "
+                "ls[1] = \"LINE_2 = 200\"; "
+                "p.write_text(\"\\n\".join(ls) + \"\\n\"); "
+                "Path(\"src/obsolete.py\").unlink()'"
+            )
+            cmd_b = (
+                "python3 -c 'from pathlib import Path; "
+                "p = Path(\"src/shared.py\"); "
+                "ls = p.read_text().splitlines(); "
+                "ls[18] = \"LINE_19 = 1900\"; "
+                "p.write_text(\"\\n\".join(ls) + \"\\n\"); "
+                "Path(\"src/worker_b.py\").write_text(\"B = 2\\n\")'"
+            )
+            dag_spec = {
+                "version": "3.1",
+                "task_id": "parallel-3way-test",
+                "nodes": {
+                    "node-a": {
+                        "id": "node-a",
+                        "name": "wave0-a",
+                        "role": "builder",
+                        "tier": "fast_tier",
+                        "model": "fast",
+                        "allowed_paths": ["src/*"],
+                        "depends_on": [],
+                        "cmd": cmd_a,
+                    },
+                    "node-b": {
+                        "id": "node-b",
+                        "name": "wave0-b",
+                        "role": "builder",
+                        "tier": "fast_tier",
+                        "model": "fast",
+                        "allowed_paths": ["src/*"],
+                        "depends_on": [],
+                        "cmd": cmd_b,
+                    },
+                    "node-c": {
+                        "id": "node-c",
+                        "name": "wave1-verify",
+                        "role": "verifier",
+                        "tier": "fast_tier",
+                        "model": "fast",
+                        "allowed_paths": ["src/*"],
+                        "depends_on": ["node-a", "node-b"],
+                        "cmd": (
+                            "python3 -c 'import sys; sys.path.insert(0, \"src\"); import worker_b; "
+                            "from pathlib import Path; "
+                            "assert \"LINE_2 = 200\" in Path(\"src/shared.py\").read_text(); "
+                            "assert not Path(\"src/obsolete.py\").exists(); "
+                            "Path(\"src/final.py\").write_text(f\"FINAL = {worker_b.B}\\n\")'"
+                        ),
+                    },
+                },
+            }
+            spec_path.write_text(json.dumps(dag_spec), encoding="utf-8")
+
+            with redirect_stdout(io.StringIO()):
+                rc = execute_swarm(repo, spec_path=spec_path, dry_run=False)
+            self.assertEqual(rc, 0)
+
+            merged_shared = (repo / "src" / "shared.py").read_text(encoding="utf-8")
+            self.assertIn("LINE_2 = 200", merged_shared)
+            self.assertIn("LINE_19 = 1900", merged_shared)
+            self.assertFalse((repo / "src" / "obsolete.py").exists())
+            self.assertTrue((repo / "src" / "worker_b.py").is_file())
+            self.assertEqual((repo / "src" / "final.py").read_text(encoding="utf-8"), "FINAL = 2\n")
+
+            state = load_dag_state(repo)
+            state["nodes"]["node-c"]["status"] = "FAILED"
+            state["nodes"]["node-c"]["artifact_sha256"] = None
+            (repo / "src" / "final.py").unlink()
+            (repo / ".agents" / "handoffs" / "dag-state.json").write_text(json.dumps(state), encoding="utf-8")
+            with redirect_stdout(io.StringIO()):
+                rc_res = execute_resume(repo, dry_run=False)
+            self.assertEqual(rc_res, 0)
+            self.assertEqual((repo / "src" / "final.py").read_text(encoding="utf-8"), "FINAL = 2\n")
+
+            subprocess.run(["git", "add", "."], cwd=repo, check=True)
+            subprocess.run(["git", "commit", "-qm", "post-swarm"], cwd=repo, check=True)
+
+            sb1 = WorktreeSandbox("conflict-1", repo)
+            sb2 = WorktreeSandbox("conflict-2", repo)
+            wt1 = sb1.create()
+            wt2 = sb2.create()
+            try:
+                (wt1 / "src" / "shared.py").write_text("CONFLICT = 1\n", encoding="utf-8")
+                (wt2 / "src" / "shared.py").write_text("CONFLICT = 2\n", encoding="utf-8")
+                merge_worktree_to_workspace(wt1, repo, ["src/*"], base_commit=sb1.base_commit)
+                with self.assertRaises(RuntimeError) as ctx:
+                    merge_worktree_to_workspace(wt2, repo, ["src/*"], base_commit=sb2.base_commit)
+                self.assertIn("[Merge Conflict]", str(ctx.exception))
+                self.assertEqual((repo / "src" / "shared.py").read_text(encoding="utf-8"), "CONFLICT = 1\n")
+                st_out = subprocess.run(["git", "status", "--porcelain"], cwd=repo, capture_output=True, text=True, check=True).stdout
+                self.assertNotIn("UU ", st_out)
+            finally:
+                sb1.cleanup()
+                sb2.cleanup()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            nongit_ws = Path(tmp).resolve()
+            (nongit_ws / "src").mkdir()
+            (nongit_ws / "src" / "keep.py").write_text("KEEP = 1\n", encoding="utf-8")
+            (nongit_ws / "src" / "drop.py").write_text("DROP = 1\n", encoding="utf-8")
+            sb_ng = WorktreeSandbox("nongit-del", nongit_ws)
+            wt_ng = sb_ng.create()
+            try:
+                (wt_ng / "src" / "drop.py").unlink()
+                (nongit_ws / "src" / "concurrent_new.py").write_text("NEW = 1\n", encoding="utf-8")
+                merge_worktree_to_workspace(wt_ng, nongit_ws, ["src/*"])
+                self.assertFalse((nongit_ws / "src" / "drop.py").exists())
+                self.assertTrue((nongit_ws / "src" / "keep.py").is_file())
+                self.assertTrue((nongit_ws / "src" / "concurrent_new.py").is_file())
+            finally:
+                sb_ng.cleanup()
+
+    def test_auto_rework_self_healing_loop(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp).resolve()
+            ensure_workspace_skeleton(ws)
+            target_py = ws / "worker.py"
+            brief_path = ws / ".agents" / "handoffs" / "active-brief.md"
+
+            def stateless_runner(round_num: int, brief: Path) -> int:
+                brief_txt = brief.read_text(encoding="utf-8")
+                if round_num == 1:
+                    slop_comment = chr(35) + " initialize the variables\n"
+                    target_py.write_text(slop_comment + "def run():\n    return 1\n", encoding="utf-8")
+                    return 0
+                if "[Round 2 Auto-Rework]" in brief_txt:
+                    target_py.write_text("def run():\n    return 1\n", encoding="utf-8")
+                    return 0
+                return 1
+
+            def gate_check(workspace: Path) -> tuple[int, str]:
+                errs = verify_code_slop.check_file(workspace / "worker.py", [])
+                if errs:
+                    return 1, "\n".join(errs)
+                return 0, "ALL CHECKS GREEN"
+
+            with redirect_stdout(io.StringIO()):
+                res = run_with_auto_rework(
+                    ws,
+                    brief_path=brief_path,
+                    runner=stateless_runner,
+                    max_rework=2,
+                    verify_fn=gate_check,
+                )
+
+            self.assertEqual(res["exit_code"], 0)
+            self.assertEqual(res["rework_count"], 1)
+            self.assertEqual(res["rounds"], 2)
+            brief_after = brief_path.read_text(encoding="utf-8")
+            self.assertIn("[Round 2 Auto-Rework]", brief_after)
+            self.assertIn("[Comment Sicko]", brief_after)
+
+            _, events = load_tree_data(ws)
+            event_types = [e["event_type"] for e in events]
+            self.assertIn("AUTO_REWORK_TRIGGERED", event_types)
+
+            spawn_sh = SCRIPTS_DIR / "ag-spawn.sh"
+            marker = ws / ".rework_round_marker"
+            env = os.environ.copy()
+            env["PSTACK_WORKSPACE"] = str(ws)
+            env["PSTACK_SPAWN_TEST_CMD"] = (
+                f"if [ ! -f '{marker}' ]; then touch '{marker}'; echo '[FAIL] simulated round 1 failure'; exit 1; "
+                "else echo '[OK] round 2 healed'; exit 0; fi"
+            )
+            proc = subprocess.run(
+                [str(spawn_sh), "codex", "--max-rework", "1"],
+                cwd=ws,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            self.assertIn("[Round 2 Auto-Rework]", brief_path.read_text(encoding="utf-8"))
+
+    def test_git_pre_commit_hook_lifecycle(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp).resolve()
+            subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.name", "Tester"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.email", "tester@example.com"], cwd=repo, check=True)
+            ensure_workspace_skeleton(repo)
+            (repo / "app.py").write_text("def ok() -> int:\n    return 1\n", encoding="utf-8")
+            subprocess.run(["git", "add", "."], cwd=repo, check=True)
+            subprocess.run(["git", "commit", "-qm", "init"], cwd=repo, check=True)
+
+            hooks_dir = repo / ".git" / "hooks"
+            hooks_dir.mkdir(parents=True, exist_ok=True)
+            existing_hook = hooks_dir / "pre-commit"
+            existing_hook.write_text("#!/usr/bin/env bash\necho 'custom-existing-hook'\n", encoding="utf-8")
+            existing_hook.chmod(0o755)
+
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(pstack_hook.install_hook(repo), 0)
+                self.assertEqual(pstack_hook.status_hook(repo), 0)
+
+            self.assertTrue((hooks_dir / "pre-commit.pstack-backup").is_file())
+            self.assertIn(pstack_hook.MANAGED_MARKER, existing_hook.read_text(encoding="utf-8"))
+
+            slop_comment = chr(35) + " initialize the variables\n"
+            (repo / "bad.py").write_text(slop_comment + "x = 1\n", encoding="utf-8")
+            subprocess.run(["git", "add", "bad.py"], cwd=repo, check=True)
+            commit_bad = subprocess.run(
+                ["git", "commit", "-m", "bad commit"],
+                cwd=repo,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertNotEqual(commit_bad.returncode, 0)
+            self.assertIn("[Comment Sicko]", commit_bad.stdout + commit_bad.stderr)
+
+            (repo / "bad.py").write_text("x = 1\n", encoding="utf-8")
+            subprocess.run(["git", "add", "bad.py"], cwd=repo, check=True)
+            commit_good = subprocess.run(
+                ["git", "commit", "-m", "clean commit"],
+                cwd=repo,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(commit_good.returncode, 0, commit_good.stdout + commit_good.stderr)
+            self.assertIn("custom-existing-hook", commit_good.stdout + commit_good.stderr)
+
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(pstack_hook.uninstall_hook(repo), 0)
+                self.assertNotEqual(pstack_hook.status_hook(repo), 0)
+            self.assertTrue(existing_hook.is_file())
+            self.assertIn("custom-existing-hook", existing_hook.read_text(encoding="utf-8"))
+
+    def test_mcp_server_jsonrpc_protocol(self) -> None:
+        mcp_script = SCRIPTS_DIR / "pstack_mcp.py"
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp).resolve()
+            ensure_workspace_skeleton(ws)
+
+            requests = [
+                {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}},
+                {"jsonrpc": "2.0", "method": "notifications/initialized"},
+                {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}},
+                {
+                    "jsonrpc": "2.0",
+                    "id": 3,
+                    "method": "tools/call",
+                    "params": {
+                        "name": "pstack_route",
+                        "arguments": {"goal": "修复状态机超时异常", "workspace": str(ws)},
+                    },
+                },
+                {
+                    "jsonrpc": "2.0",
+                    "id": 4,
+                    "method": "tools/call",
+                    "params": {
+                        "name": "pstack_tree",
+                        "arguments": {"json": True, "workspace": str(ws)},
+                    },
+                },
+            ]
+            stdin_payload = "\n".join(json.dumps(r) for r in requests) + "\n"
+            proc = subprocess.run(
+                [sys.executable, str(mcp_script)],
+                input=stdin_payload,
+                cwd=ws,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            resp_lines = [ln for ln in proc.stdout.splitlines() if ln.strip()]
+            self.assertEqual(len(resp_lines), 4, f"Expected 4 responses (no response for notification): {resp_lines}")
+
+            responses = [json.loads(ln) for ln in resp_lines]
+            self.assertEqual(responses[0]["id"], 1)
+            self.assertEqual(responses[0]["result"]["serverInfo"]["name"], "pstack-mcp")
+
+            tools = responses[1]["result"]["tools"]
+            tool_names = [t["name"] for t in tools]
+            self.assertEqual(
+                tool_names,
+                ["pstack_route", "pstack_verify", "pstack_swarm", "pstack_arena", "pstack_tree"],
+            )
+
+            route_data = json.loads(responses[2]["result"]["content"][0]["text"])
+            self.assertEqual(route_data["status"], "ROUTED")
+            self.assertTrue((ws / ".agents" / "handoffs" / "active-brief.md").is_file())
+
+            tree_data = json.loads(responses[3]["result"]["content"][0]["text"])
+            self.assertIn("dag_state", tree_data)
+            self.assertIn("events", tree_data)
+
+            framed_reqs = [
+                {"jsonrpc": "2.0", "id": 10, "method": "initialize", "params": {}},
+                {
+                    "jsonrpc": "2.0",
+                    "id": 11,
+                    "method": "tools/call",
+                    "params": {
+                        "name": "pstack_route",
+                        "arguments": {"goal": "修复状态机超时恢复异常", "workspace": str(ws)},
+                    },
+                },
+                {
+                    "jsonrpc": "2.0",
+                    "id": 12,
+                    "method": "tools/call",
+                    "params": {
+                        "name": "pstack_swarm",
+                        "arguments": {"goal": "Parallel DAG check", "dry_run": True, "workspace": str(ws)},
+                    },
+                },
+                {
+                    "jsonrpc": "2.0",
+                    "id": 13,
+                    "method": "tools/call",
+                    "params": {
+                        "name": "pstack_arena",
+                        "arguments": {"runners": ["codex", "opencode"], "dry_run": True, "workspace": str(ws)},
+                    },
+                },
+                {
+                    "jsonrpc": "2.0",
+                    "id": 14,
+                    "method": "tools/call",
+                    "params": {
+                        "name": "pstack_verify",
+                        "arguments": {"mode": "handoff", "workspace": str(ws)},
+                    },
+                },
+            ]
+            framed_bytes = b""
+            for req in framed_reqs:
+                body = json.dumps(req, ensure_ascii=False).encode("utf-8")
+                framed_bytes += f"Content-Length: {len(body)}\r\n\r\n".encode("ascii") + body
+
+            proc_framed = subprocess.run(
+                [sys.executable, str(mcp_script)],
+                input=framed_bytes,
+                cwd=ws,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(proc_framed.returncode, 0, proc_framed.stderr.decode("utf-8", errors="replace"))
+            raw_out = proc_framed.stdout
+            parsed_framed: list[dict] = []
+            offset = 0
+            while offset < len(raw_out):
+                hdr_end = raw_out.find(b"\r\n\r\n", offset)
+                self.assertNotEqual(hdr_end, -1, f"Missing Content-Length header at offset {offset}")
+                hdr_txt = raw_out[offset:hdr_end].decode("ascii")
+                clen = int(hdr_txt.split(":", 1)[1].strip())
+                body_start = hdr_end + 4
+                body_slice = raw_out[body_start:body_start + clen]
+                self.assertEqual(len(body_slice), clen)
+                parsed_framed.append(json.loads(body_slice.decode("utf-8")))
+                offset = body_start + clen
+
+            self.assertEqual([r["id"] for r in parsed_framed], [10, 11, 12, 13, 14])
+            swarm_payload = json.loads(parsed_framed[2]["result"]["content"][0]["text"])
+            self.assertTrue(swarm_payload["passed"])
+            arena_payload = json.loads(parsed_framed[3]["result"]["content"][0]["text"])
+            self.assertIn(arena_payload["winner"], ["codex", "opencode"])
+            verify_payload = json.loads(parsed_framed[4]["result"]["content"][0]["text"])
+            self.assertTrue(verify_payload["passed"])
+
+            digest_sample = extract_gate_failure_digest("xml_parser error: bad tag\nx [Comment Sicko]: slop")
+            self.assertIn("xml_parser error: bad tag", digest_sample)
+            self.assertIn("[Comment Sicko]: slop", digest_sample)
+
+            ct_body = json.dumps({"jsonrpc": "2.0", "id": 20, "method": "ping", "params": {}}, ensure_ascii=False).encode("utf-8")
+            bad_params_body = json.dumps({"jsonrpc": "2.0", "id": 21, "method": "tools/call", "params": "bad"}, ensure_ascii=False).encode("utf-8")
+            ct_payload = (
+                f"Content-Type: application/vscode-jsonrpc; charset=utf-8\r\nContent-Length: {len(ct_body)}\r\n\r\n".encode("ascii")
+                + ct_body
+                + f"Content-Length: {len(bad_params_body)}\r\n\r\n".encode("ascii")
+                + bad_params_body
+            )
+            proc_ct = subprocess.run(
+                [sys.executable, str(mcp_script)],
+                input=ct_payload,
+                cwd=ws,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(proc_ct.returncode, 0, proc_ct.stderr.decode("utf-8", errors="replace"))
+            ct_out = proc_ct.stdout
+            ct_resps: list[dict] = []
+            ct_off = 0
+            while ct_off < len(ct_out):
+                hdr_end = ct_out.find(b"\r\n\r\n", ct_off)
+                self.assertNotEqual(hdr_end, -1)
+                clen = int(ct_out[ct_off:hdr_end].decode("ascii").split(":", 1)[1].strip())
+                bstart = hdr_end + 4
+                ct_resps.append(json.loads(ct_out[bstart:bstart + clen].decode("utf-8")))
+                ct_off = bstart + clen
+            self.assertEqual(ct_resps[0]["id"], 20)
+            self.assertEqual(ct_resps[0]["result"], {})
+            self.assertEqual(ct_resps[1]["id"], 21)
+            self.assertEqual(ct_resps[1]["error"]["code"], -32602)
 
 
 if __name__ == "__main__":

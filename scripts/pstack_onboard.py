@@ -80,7 +80,7 @@ def detect_verify_cmd(workspace_root: Path, profile: str = "strict") -> str:
     if (workspace_root / ".git").exists():
         return "git status -s"
 
-    return "python3 -m unittest"
+    return "python3 -V"
 
 
 def collect_recent_commits(workspace_root: Path, count: int) -> tuple[list[str], list[str]]:

@@ -38,7 +38,10 @@ Activate this skill whenever the user invokes `/pstack-run`, `/pstack`, `/pstack
    - Run `pstack verify prep-verifier` to inspect the <= 20 line read-only digest (`active-brief.md`, `[Builder Restate]`, `Runtime Verification Digest`, and `git diff --stat`).
    - Write a 4-tier adversarial verdict (`ACT_ON`, `CONSIDER`, `NOTED`, `DISMISSED` + `VERDICT: PASS | REJECT`) to `.agents/handoffs/verifier-verdict.md`.
    - Run `pstack verify verdict` to validate the verdict and automatically export `.agents/handoffs/output-final.md` (with `> [Builder Restate]` stripped).
-4. **Zero-Token Offline Tooling (`pstack run`, `route`, `swarm`, `arena`, `resume`, `tree`, `pickup`, `bench`)**:
+4. **Zero-Token Offline Tooling (`pstack run`, `route`, `swarm`, `arena`, `resume`, `tree`, `hook`, `mcp`, `pickup`, `bench`)**:
+   - `pstack route "<goal>"` / `pstack run "<goal>" --max-rework 2`: Bilingual Repo-Map symbol ranking across `.py/.ts/.tsx/.js/.go/.rs/.sh` and bounded self-healing rework loop.
+   - `pstack swarm` / `pstack arena` / `pstack resume` / `pstack tree`: Topological wave-parallel `WorktreeSandbox` execution with 3-way Git patch merging and `events.jsonl` observability.
+   - `pstack hook <install|uninstall|status>` & `pstack mcp [--self-test|--list-tools]`: Git pre-commit enforcement and zero-dependency JSON-RPC 2.0 Stdio MCP server (5 tools).
    - `pstack pause "<note>"` / `pstack pickup`: Generate and read `.agents/handoffs/session-snapshot.md` (<= 20 lines, with automatic crash log pointer recovery from `.agents/handoffs/logs/`).
    - `pstack verify handoff --fix`: Validate line bounds (`1 <= start <= end <= total_lines`) and auto-heal drifted `file:start-end#symbol_name` pointers via AST/regex resolution.
    - `pstack correct --scan | --code-rule "<regex>" "<reason>" | --prose-ban "<phrase>"`: Promote lessons from `.agents/decision.tsv` into mechanical regex/prose rules.

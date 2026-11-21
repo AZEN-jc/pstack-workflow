@@ -156,11 +156,88 @@ def classify_goal(goal: str, models_cfg: dict | None = None) -> dict:
     }
 
 
-def _extract_ast_symbols(file_path: Path) -> list[tuple[int, int, str]]:
+BILINGUAL_LEXICON: dict[str, tuple[str, ...]] = {
+    "状态机": ("state", "dag", "session", "snapshot"),
+    "状态": ("state", "dag", "session", "snapshot", "status"),
+    "超时": ("timeout", "spawn"),
+    "恢复": ("resume", "pickup", "pause", "session", "quarantine"),
+    "断点": ("resume", "pickup", "pause", "session", "quarantine", "snapshot"),
+    "续传": ("resume", "pickup", "pause", "session", "quarantine"),
+    "路由": ("route", "router", "classify", "model"),
+    "意图": ("route", "router", "classify", "model", "intent"),
+    "门禁": ("verify", "gate", "handoff", "prose", "slop"),
+    "校验": ("verify", "gate", "handoff", "prose", "slop"),
+    "检查": ("verify", "gate", "handoff", "prose", "slop"),
+    "工作树": ("worktree", "sandbox", "swarm", "arena", "scheduler"),
+    "沙箱": ("worktree", "sandbox", "swarm", "arena", "scheduler"),
+    "并行": ("worktree", "sandbox", "swarm", "arena", "scheduler", "parallel"),
+    "竞技": ("worktree", "sandbox", "swarm", "arena", "scheduler"),
+    "基准": ("bench", "benchmark", "ab", "abcd"),
+    "实验": ("bench", "benchmark", "ab", "abcd"),
+    "跑分": ("bench", "benchmark", "ab", "abcd"),
+    "更新": ("update", "remote", "bootstrap"),
+    "同步": ("update", "remote", "bootstrap"),
+    "树": ("tree", "event", "ascii"),
+    "事件": ("tree", "event", "ascii"),
+    "可视化": ("tree", "event", "ascii"),
+    "钩子": ("hook", "pre-commit"),
+    "预提交": ("hook", "pre-commit"),
+    "提交前": ("hook", "pre-commit"),
+    "协议": ("mcp", "jsonrpc", "stdio"),
+    "异常": ("error", "fail", "crash", "recovery", "quarantine"),
+    "崩溃": ("crash", "quarantine", "recovery", "spawn"),
+    "返工": ("rework", "heal", "retry"),
+    "自愈": ("rework", "heal", "fix"),
+    "合并": ("merge", "apply", "conflict", "worktree"),
+    "冲突": ("merge", "conflict", "worktree"),
+    "权限": ("scope", "allowed", "violation"),
+    "白名单": ("scope", "allowed", "violation"),
+    "越权": ("scope", "allowed", "violation"),
+}
+
+SUPPORTED_CODE_EXTENSIONS = (".py", ".ts", ".tsx", ".js", ".go", ".rs", ".sh")
+REPOMAP_SKIP_DIRS = {
+    ".git", "__pycache__", ".venv", "venv", "node_modules", "dist", "build", ".agents",
+}
+SHELL_CONTROL_KEYWORDS = {"if", "for", "while", "until", "case", "select", "else", "elif"}
+
+
+def _split_identifier_tokens(identifier: str) -> set[str]:
+    tokens: set[str] = set()
+    for seg in re.split(r"[^A-Za-z0-9]+", identifier):
+        if not seg:
+            continue
+        tokens.add(seg.lower())
+        camel_parts = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", seg).split()
+        for part in camel_parts:
+            if part:
+                tokens.add(part.lower())
+    return tokens
+
+
+def _extract_bilingual_terms(goal_text: str) -> tuple[set[str], set[str]]:
+    ascii_keywords = _split_identifier_tokens(goal_text)
+    cjk_terms: set[str] = set()
+
+    for zh_key, en_terms in BILINGUAL_LEXICON.items():
+        if zh_key in goal_text:
+            cjk_terms.add(zh_key)
+            ascii_keywords.update(en_terms)
+
+    for run in re.findall(r"[\u4e00-\u9fff]+", goal_text):
+        if len(run) >= 2:
+            cjk_terms.add(run)
+            for idx in range(len(run) - 1):
+                cjk_terms.add(run[idx:idx + 2])
+
+    return ascii_keywords, cjk_terms
+
+
+def _extract_ast_symbols(file_path: Path, content: str | None = None) -> list[tuple[int, int, str]]:
     symbols: list[tuple[int, int, str]] = []
     try:
-        content = file_path.read_text(encoding="utf-8")
-        tree = ast.parse(content, filename=str(file_path))
+        raw = content if content is not None else file_path.read_text(encoding="utf-8")
+        tree = ast.parse(raw, filename=str(file_path))
     except (SyntaxError, UnicodeDecodeError, OSError):
         return symbols
 
@@ -173,6 +250,169 @@ def _extract_ast_symbols(file_path: Path) -> list[tuple[int, int, str]]:
                 if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
                     symbols.append((item.lineno, getattr(item, "end_lineno", item.lineno), f"{node.name}.{item.name}"))
     return symbols
+
+
+def _is_rust_char_literal(line: str, idx: int) -> bool:
+    n = len(line)
+    if idx + 2 >= n:
+        return False
+    nxt = line[idx + 1]
+    if nxt == "\\":
+        j = idx + 2
+        while j < n:
+            if line[j] == "\\":
+                j += 2
+                continue
+            if line[j] == "'":
+                return True
+            if line[j].isspace() or line[j] in ";,)>}":
+                return False
+            j += 1
+        return False
+    return nxt != "'" and line[idx + 2] == "'"
+
+
+def _count_code_braces(lines: list[str], start_line: int, suffix: str) -> int | None:
+    brace_depth = 0
+    saw_open_brace = False
+    in_block_comment = False
+    quote_char: str | None = None
+
+    for idx in range(start_line, len(lines) + 1):
+        line = lines[idx - 1]
+        i = 0
+        n = len(line)
+        while i < n:
+            ch = line[i]
+            nxt = line[i + 1] if i + 1 < n else ""
+
+            if in_block_comment:
+                if ch == "*" and nxt == "/":
+                    in_block_comment = False
+                    i += 2
+                    continue
+                i += 1
+                continue
+
+            if quote_char is not None:
+                if ch == "\\":
+                    i += 2
+                    continue
+                if ch == quote_char:
+                    quote_char = None
+                i += 1
+                continue
+
+            if suffix != ".sh" and ch == "/" and nxt == "/":
+                break
+            if suffix != ".sh" and ch == "/" and nxt == "*":
+                in_block_comment = True
+                i += 2
+                continue
+            if suffix == ".sh" and ch == "#" and (i == 0 or line[i - 1].isspace()):
+                break
+
+            if ch == "'" and suffix == ".rs" and not _is_rust_char_literal(line, i):
+                i += 1
+                continue
+
+            if ch in ("'", '"', "`"):
+                quote_char = ch
+                i += 1
+                continue
+
+            if ch == "{":
+                saw_open_brace = True
+                brace_depth += 1
+            elif ch == "}":
+                brace_depth -= 1
+                if saw_open_brace and brace_depth <= 0:
+                    return idx
+            i += 1
+
+    return None
+
+
+def _extract_multilang_symbols(file_path: Path, content: str) -> list[tuple[int, int, str]]:
+    suffix = file_path.suffix.lower()
+    lines = content.splitlines()
+    symbols: list[tuple[int, int, str]] = []
+    seen_names: set[str] = set()
+
+    if suffix == ".sh":
+        pat_sh_paren = re.compile(r"^\s*(?:function\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*\(\s*\)\s*\{?")
+        pat_sh_kw = re.compile(r"^\s*function\s+([A-Za-z_][A-Za-z0-9_]*)\b")
+        for idx, line in enumerate(lines, 1):
+            m = pat_sh_paren.match(line) or pat_sh_kw.match(line)
+            if not m:
+                continue
+            name = m.group(1)
+            if name in SHELL_CONTROL_KEYWORDS or name in seen_names:
+                continue
+            end_line = _count_code_braces(lines, idx, suffix) or idx
+            seen_names.add(name)
+            symbols.append((idx, end_line, name))
+        return symbols
+
+    if suffix in (".ts", ".tsx", ".js"):
+        pat_ts_decl = re.compile(
+            r"^\s*(?:export\s+)?(?:default\s+)?(?:async\s+)?(?:function|class|interface|type|enum)\s+([A-Za-z_][A-Za-z0-9_]*)\b"
+        )
+        pat_ts_var = re.compile(
+            r"^\s*(?:export\s+)?(?:const|let)\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?::[^=]+)?=\s*(?:async\s+)?(?:<[^>]+>\s*)?(?:function\b|\([^)]*\)\s*(?::[^=>{]+)?=>|[A-Za-z_][A-Za-z0-9_]*\s*=>)"
+        )
+        for idx, line in enumerate(lines, 1):
+            m = pat_ts_decl.match(line) or pat_ts_var.match(line)
+            if not m:
+                continue
+            name = m.group(1)
+            if name in seen_names:
+                continue
+            end_line = _count_code_braces(lines, idx, suffix)
+            if end_line is None:
+                end_line = idx
+            seen_names.add(name)
+            symbols.append((idx, end_line, name))
+        return symbols
+
+    if suffix == ".go":
+        pat_go = re.compile(r"^\s*func\s+(?:\([^)]*\)\s*)?([A-Za-z_][A-Za-z0-9_]*)\b")
+        pat_go_type = re.compile(r"^\s*type\s+([A-Za-z_][A-Za-z0-9_]*)\s+(?:struct|interface)\b")
+        for idx, line in enumerate(lines, 1):
+            m = pat_go.match(line) or pat_go_type.match(line)
+            if not m:
+                continue
+            name = m.group(1)
+            if name in seen_names:
+                continue
+            end_line = _count_code_braces(lines, idx, suffix) or idx
+            seen_names.add(name)
+            symbols.append((idx, end_line, name))
+        return symbols
+
+    if suffix == ".rs":
+        pat_rs = re.compile(
+            r"^\s*(?:pub(?:\s*\([^)]*\))?\s+)?(?:async\s+)?(?:unsafe\s+)?(?:const\s+)?(?:fn|struct|enum|trait|impl)\s+([A-Za-z_][A-Za-z0-9_]*)\b"
+        )
+        for idx, line in enumerate(lines, 1):
+            m = pat_rs.match(line)
+            if not m:
+                continue
+            name = m.group(1)
+            if name in seen_names:
+                continue
+            end_line = _count_code_braces(lines, idx, suffix) or idx
+            seen_names.add(name)
+            symbols.append((idx, end_line, name))
+        return symbols
+
+    return symbols
+
+
+def _extract_file_symbols(file_path: Path, content: str) -> list[tuple[int, int, str]]:
+    if file_path.suffix.lower() == ".py":
+        return _extract_ast_symbols(file_path, content)
+    return _extract_multilang_symbols(file_path, content)
 
 
 def auto_discover_pointers_and_scope(
@@ -192,11 +432,21 @@ def auto_discover_pointers_and_scope(
         goal_text = str(goal)
         ws_root = get_workspace_root()
 
-    keywords = set(re.findall(r"[A-Za-z0-9_]+", goal_text.lower()))
+    ascii_keywords, cjk_terms = _extract_bilingual_terms(goal_text)
     candidate_files: list[Path] = []
+    seen_files: set[Path] = set()
+    git_modified_files: set[Path] = set()
+
+    def add_candidate(p: Path) -> None:
+        if not p.is_file() or p.suffix.lower() not in SUPPORTED_CODE_EXTENSIONS:
+            return
+        resolved = p.resolve()
+        if resolved not in seen_files:
+            seen_files.add(resolved)
+            candidate_files.append(p)
 
     proc = subprocess.run(
-        ["git", "status", "--porcelain"],
+        ["git", "-c", "core.quotePath=false", "status", "--porcelain"],
         cwd=ws_root,
         capture_output=True,
         text=True,
@@ -204,49 +454,107 @@ def auto_discover_pointers_and_scope(
     )
     if proc.returncode == 0:
         for line in proc.stdout.splitlines():
+            if len(line) < 4:
+                continue
             line_clean = line[3:].strip()
             if " -> " in line_clean:
                 line_clean = line_clean.split(" -> ")[1].strip()
-            if line_clean.endswith(".py"):
-                p = ws_root / line_clean
-                if p.is_file():
-                    candidate_files.append(p)
+            if line_clean.startswith('"') and line_clean.endswith('"'):
+                line_clean = line_clean[1:-1]
+            p = ws_root / line_clean
+            if p.is_file() and p.suffix.lower() in SUPPORTED_CODE_EXTENSIONS:
+                git_modified_files.add(p.resolve())
+                add_candidate(p)
 
-    search_dirs = [ws_root / "src", ws_root / "scripts", ws_root / "tests", ws_root / "lib"]
-    for py_file in sorted(ws_root.glob("*.py")):
-        if py_file not in candidate_files:
-            candidate_files.append(py_file)
-    for sdir in search_dirs:
-        if sdir.is_dir():
-            for py_file in sorted(sdir.glob("*.py")):
-                if py_file not in candidate_files:
-                    candidate_files.append(py_file)
+    for top_file in sorted(ws_root.glob("*")):
+        add_candidate(top_file)
 
-    discovered_pointers: list[str] = []
-    touched_dirs: set[str] = set()
+    for sdir_name in ("src", "scripts", "tests", "lib", "app", "pkg", "cmd", "internal", "packages"):
+        sdir = ws_root / sdir_name
+        if not sdir.is_dir():
+            continue
+        for root_str, dirs, files in os.walk(sdir):
+            dirs[:] = sorted(d for d in dirs if d not in REPOMAP_SKIP_DIRS)
+            for fname in sorted(files):
+                add_candidate(Path(root_str) / fname)
 
+    file_texts: dict[Path, str] = {}
+    file_lines: dict[Path, list[str]] = {}
+    file_header_tokens: dict[Path, set[str]] = {}
     for cand in candidate_files:
+        try:
+            raw = cand.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            continue
+        lines = raw.splitlines()
+        file_texts[cand] = raw
+        file_lines[cand] = lines
+        header_text = "\n".join(lines[:20])
+        file_header_tokens[cand] = _split_identifier_tokens(header_text)
+
+    ranked_candidates: list[tuple[int, int, int, str, int, int, str]] = []
+    for cand in candidate_files:
+        if cand not in file_texts:
+            continue
+        raw = file_texts[cand]
+        lines = file_lines[cand]
+        header_tokens = file_header_tokens[cand]
+        header_text = "\n".join(lines[:20])
         try:
             rel = cand.relative_to(ws_root).as_posix()
         except ValueError:
             rel = cand.name
 
-        symbols = _extract_ast_symbols(cand)
-        matched_symbols: list[tuple[int, int, str]] = []
+        symbols = _extract_file_symbols(cand, raw)
+        if not symbols:
+            continue
+
+        stem_lower = cand.stem.lower()
+        name_lower = cand.name.lower()
+        ref_count = 0
+        if len(stem_lower) >= 3:
+            stem_re = re.compile(rf"\b{re.escape(stem_lower)}\b")
+            for other_cand, other_text in file_texts.items():
+                if other_cand == cand:
+                    continue
+                other_lower = other_text.lower()
+                if name_lower in other_lower or stem_re.search(other_lower):
+                    ref_count += 1
+
+        git_bonus = 1 if cand.resolve() in git_modified_files else 0
+        stem_tokens = _split_identifier_tokens(cand.stem)
+
         for s_start, s_end, s_name in symbols:
-            name_parts = set(re.findall(r"[A-Za-z0-9_]+", s_name.lower()))
-            if keywords.intersection(name_parts):
-                matched_symbols.append((s_start, s_end, s_name))
+            sym_tokens = _split_identifier_tokens(s_name) | stem_tokens
+            sym_hits = sum(1 for kw in ascii_keywords if kw in sym_tokens)
+            sym_hits += sum(1 for term in cjk_terms if term in s_name)
 
-        selected = matched_symbols if matched_symbols else symbols[:2]
-        for s_start, s_end, s_name in selected[:2]:
-            ptr = f"{rel}:{s_start}-{s_end}#{s_name}"
-            discovered_pointers.append(ptr)
-            parts = rel.split("/")
-            if len(parts) > 1:
-                touched_dirs.add(f"{parts[0]}/*")
+            span_end = min(len(lines), s_end, s_start + 80)
+            span_text = "\n".join(lines[max(0, s_start - 1):span_end])
+            span_tokens = _split_identifier_tokens(span_text) | header_tokens
+            combined_span_raw = span_text + "\n" + header_text
+            content_hits = sum(1 for kw in ascii_keywords if kw in span_tokens)
+            content_hits += sum(1 for term in cjk_terms if term in combined_span_raw)
 
-        if len(discovered_pointers) >= 4:
+            ref_bonus = min(ref_count, 4) if (sym_hits + content_hits) > 0 else 0
+            score = (sym_hits * 5) + (content_hits * 2) + ref_bonus + (git_bonus * 3)
+            ranked_candidates.append((score, sym_hits, ref_count, rel, s_start, s_end, s_name))
+
+    ranked_candidates.sort(key=lambda item: (-item[0], -item[1], -item[2], item[3], item[4]))
+
+    discovered_pointers: list[str] = []
+    touched_dirs: set[str] = set()
+    per_file_counts: dict[str, int] = {}
+
+    for score, sym_hits, ref_count, rel, s_start, s_end, s_name in ranked_candidates:
+        if per_file_counts.get(rel, 0) >= 2:
+            continue
+        per_file_counts[rel] = per_file_counts.get(rel, 0) + 1
+        discovered_pointers.append(f"{rel}:{s_start}-{s_end}#{s_name}")
+        parts = rel.split("/")
+        if len(parts) > 1:
+            touched_dirs.add(f"{parts[0]}/*")
+        if len(discovered_pointers) >= 6:
             break
 
     if not discovered_pointers:
@@ -388,7 +696,7 @@ def route_cli(goal: str, output: Path | None, json_mode: bool) -> int:
     return 0
 
 
-def run_cli(goal: str, runner: str, dry_run: bool) -> int:
+def run_cli(goal: str, runner: str, dry_run: bool, max_rework: int = 0) -> int:
     ws = get_workspace_root()
     brief_path = generate_brief(goal, ws)
     print(f"[Pstack Run] Successfully routed and created brief: {brief_path}")
@@ -398,13 +706,19 @@ def run_cli(goal: str, runner: str, dry_run: bool) -> int:
         log_event("RUN_SIMULATED", {"goal": goal, "runner": runner, "brief": str(brief_path)}, ws)
         return 0
 
-    log_event("RUN_START", {"goal": goal, "runner": runner, "brief": str(brief_path)}, ws)
-    spawn_script = ws / "scripts" / "ag-spawn.sh"
+    log_event("RUN_START", {"goal": goal, "runner": runner, "brief": str(brief_path), "max_rework": max_rework}, ws)
+    if max_rework > 0:
+        from pstack_scheduler import run_with_auto_rework
+
+        res = run_with_auto_rework(ws, brief_path=brief_path, runner=runner, max_rework=max_rework)
+        return int(res["exit_code"])
+
+    spawn_script = Path(__file__).resolve().parent / "ag-spawn.sh"
     if spawn_script.is_file() and os.access(spawn_script, os.X_OK):
         proc = subprocess.run([str(spawn_script), str(brief_path), runner], cwd=ws, check=False)
         return proc.returncode
 
-    verify_script = ws / "scripts" / "pstack-verify.py"
+    verify_script = Path(__file__).resolve().parent / "pstack-verify.py"
     proc = subprocess.run([sys.executable, str(verify_script), "all"], cwd=ws, check=False)
     return proc.returncode
 
@@ -422,12 +736,18 @@ def main() -> int:
     run_p.add_argument("goal", type=str, help="Natural language goal or task prompt")
     run_p.add_argument("--runner", default="antigravity", help="Target agent runner")
     run_p.add_argument("--dry-run", action="store_true", help="Simulate execution without modifying files")
+    run_p.add_argument(
+        "--max-rework",
+        type=int,
+        default=int(os.environ.get("PSTACK_MAX_REWORK", "0") or "0"),
+        help="Bounded auto-rework rounds on gate failure",
+    )
 
     args = parser.parse_args()
     if args.command == "route":
         return route_cli(args.goal, args.output, args.json)
     if args.command == "run":
-        return run_cli(args.goal, args.runner, args.dry_run)
+        return run_cli(args.goal, args.runner, args.dry_run, max_rework=args.max_rework)
 
     parser.print_help()
     return 2

@@ -27,6 +27,8 @@ register_global_agents() {
   ln -sfn "$SOURCE_ROOT/scripts/pstack-router.py" "$HOME/.local/bin/pstack-router"
   ln -sfn "$SOURCE_ROOT/scripts/pstack-scheduler.py" "$HOME/.local/bin/pstack-scheduler"
   ln -sfn "$SOURCE_ROOT/scripts/pstack-tree.py" "$HOME/.local/bin/pstack-tree"
+  ln -sfn "$SOURCE_ROOT/scripts/pstack-hook.py" "$HOME/.local/bin/pstack-hook"
+  ln -sfn "$SOURCE_ROOT/scripts/pstack-mcp.py" "$HOME/.local/bin/pstack-mcp"
   ln -sfn "$SOURCE_ROOT/scripts/pstack-verify.py" "$HOME/.local/bin/pstack-verify"
   ln -sfn "$SOURCE_ROOT/scripts/pstack-correct.py" "$HOME/.local/bin/pstack-correct"
   ln -sfn "$SOURCE_ROOT/scripts/pstack-session.py" "$HOME/.local/bin/pstack-session"
@@ -34,7 +36,7 @@ register_global_agents() {
   ln -sfn "$SOURCE_ROOT/scripts/pstack-bench.py" "$HOME/.local/bin/pstack-bench"
   ln -sfn "$SOURCE_ROOT/scripts/pstack_update.py" "$HOME/.local/bin/pstack-update"
   ln -sfn "$SOURCE_ROOT/scripts/ag-spawn.sh" "$HOME/.local/bin/ag-spawn"
-  echo "[OK] Linked global CLIs in $HOME/.local/bin (pstack, pstack-router, pstack-scheduler, pstack-tree, pstack-verify, pstack-correct, pstack-session, pstack-onboard, pstack-bench, pstack-update, ag-spawn)"
+  echo "[OK] Linked global CLIs in $HOME/.local/bin (pstack, pstack-router, pstack-scheduler, pstack-tree, pstack-hook, pstack-mcp, pstack-verify, pstack-correct, pstack-session, pstack-onboard, pstack-bench, pstack-update, ag-spawn)"
 
   local skill_targets=(
     "$HOME/.gemini/config/skills/pstack"

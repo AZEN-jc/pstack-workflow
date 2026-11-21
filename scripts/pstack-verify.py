@@ -405,7 +405,11 @@ def main() -> int:
 
     if mode == "all":
         ensure_workspace_skeleton(workspace_root)
-        brief_target = resolve_asset(".agents/handoffs/active-brief.md", workspace_root)
+        brief_target = (
+            Path(sys.argv[2])
+            if len(sys.argv) > 2
+            else resolve_asset(".agents/handoffs/active-brief.md", workspace_root)
+        )
         draft_target = resolve_asset(".agents/handoffs/output-draft.md", workspace_root)
         code_targets = (
             [str(workspace_root), *default_home_targets]

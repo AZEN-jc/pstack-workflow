@@ -77,19 +77,34 @@ pstack update
 pstack test
 pstack bench
 pstack verify handoff --fix
+
+# 7. v3.1 内核硬化指令 (Repo-Map / Hook / MCP / Auto-Rework)
+pstack route "修复状态机超时恢复异常"
+pstack run "修复路由 Bug" --runner codex --max-rework 2
+pstack hook install && pstack hook status
+pstack mcp --self-test
 ```
 
 ---
 
-## 5. 端到端验收契约 (Deliverable Verification)
+## 5. v3.1 内核硬化模块 (Kernel Hardening)
 
-在仓库根目录依次执行以下 7 条命令，返回码均为 `0` 即代表 v3.0 升级完备 `[离线实测 Offline-Measured]`：
+- **双语 Repo-Map 排序**：`scripts/pstack_router.py` 内置中英工程词典与多语言符号提取，支持 `.py/.ts/.tsx/.js/.go/.rs/.sh` 跨文件相关性打分 `[实测 Measured]`。
+- **真并行 Worktree 与三方合入**：`scripts/pstack_scheduler.py` 提供 `topological_levels` 并发波次调度与 `git apply --3way` 补丁合入，支持删除传播与冲突拦截 `[实测 Measured]`。
+- **有界自愈自动返工**：`run_with_auto_rework` 与 `--max-rework <N>` 自动提取 `[Gate Failure Digest]` 并触发全新无状态子 Agent 返工 `[实测 Measured]`。
+- **Git 钩子与 Stdio MCP**：`pstack hook` 强制提交前门禁检查，`pstack mcp` 通过零依赖 JSON-RPC 2.0 暴露 5 个结构化工具 `[实测 Measured]`。
+
+---
+
+## 6. 端到端验收契约 (Deliverable Verification)
+
+在仓库根目录依次执行以下 7 条命令，返回码均为 `0` 即代表升级完备 `[离线实测 Offline-Measured]`：
 
 ```bash
 ./scripts/bootstrap-repo.sh --global && pstack status
 wc -l .agents/pstack/pstack-core.md
-pstack test && pstack bench
-pstack pause "v3.0 upgrade complete" && pstack pickup
+pstack test && pstack bench && pstack mcp --self-test
+pstack pause "v3.1 kernel hardening complete" && pstack pickup
 pstack correct --scan && pstack onboard --detect
 pstack verify handoff --fix && pstack verify all && pstack verify prep-verifier --blind && pstack verify verdict
 python3 scripts/verify-prose.py README.md && python3 scripts/verify-prose.py README_ZH.md && python3 scripts/verify-prose.py UPGRADE_V2.md && python3 scripts/verify-prose.py benchmarks/latest-report.md

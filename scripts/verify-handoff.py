@@ -200,6 +200,26 @@ def _find_python_symbol_span(text: str, symbol_name: str) -> tuple[int, int] | N
     return _select_best_symbol_node(matches)
 
 
+def _is_rust_char_literal(line: str, idx: int) -> bool:
+    n = len(line)
+    if idx + 2 >= n:
+        return False
+    nxt = line[idx + 1]
+    if nxt == "\\":
+        j = idx + 2
+        while j < n:
+            if line[j] == "\\":
+                j += 2
+                continue
+            if line[j] == "'":
+                return True
+            if line[j].isspace() or line[j] in ";,)>}":
+                return False
+            j += 1
+        return False
+    return nxt != "'" and line[idx + 2] == "'"
+
+
 def _count_code_braces(lines: list[str], start_line: int, suffix: str) -> int | None:
     brace_depth = 0
     saw_open_brace = False
@@ -240,6 +260,10 @@ def _count_code_braces(lines: list[str], start_line: int, suffix: str) -> int | 
             if suffix == ".sh" and ch == "#" and (i == 0 or line[i - 1].isspace()):
                 break
 
+            if ch == "'" and suffix == ".rs" and not _is_rust_char_literal(line, i):
+                i += 1
+                continue
+
             if ch in ("'", '"', "`"):
                 quote_char = ch
                 i += 1
@@ -278,8 +302,8 @@ def _find_regex_symbol_span(lines: list[str], symbol_name: str, suffix: str) -> 
         re.compile(rf"^\s*(?:async\s+)?(?:def|class)\s+{esc}\b"),
         re.compile(rf"^\s*(?:function\s+)?{esc}\s*\(\s*\)"),
         re.compile(
-            rf"^\s*(?:pub\s+)?(?:export\s+)?(?:default\s+)?(?:async\s+)?"
-            rf"(?:function|class|interface|type|const|let|fn|func|struct|enum)\s+(?:\([^)]*\)\s*)?{esc}\b"
+            rf"^\s*(?:pub(?:\s*\([^)]*\))?\s+)?(?:export\s+)?(?:default\s+)?(?:async\s+)?(?:unsafe\s+)?(?:const\s+)?"
+            rf"(?:function|class|interface|type|const|let|fn|func|struct|enum|trait|impl)\s+(?:\([^)]*\)\s*)?{esc}\b"
         ),
     ]
     start_line = None

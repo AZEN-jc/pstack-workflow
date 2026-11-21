@@ -145,10 +145,17 @@ pstack pickup
 pstack update --check
 pstack update
 
-# Run unit tests and 0-token reproducible benchmark (outputs benchmarks/latest-report.md)
+# Run unit tests, 0-token benchmark, and MCP self-test
 pstack test
 pstack bench
+pstack mcp --self-test
 pstack verify handoff --fix
+
+# Bilingual Repo-Map routing, bounded auto-rework, parallel Swarm, and Git pre-commit hook
+pstack route "修复状态机超时恢复异常" --json
+pstack run "修复路由 Bug" --runner codex --max-rework 2
+pstack swarm --dry-run && pstack arena --dry-run && pstack tree
+pstack hook install && pstack hook status
 ```
 
 See [benchmarks/latest-report.md](./benchmarks/latest-report.md) for full benchmark metrics [Offline-Measured].
@@ -172,13 +179,13 @@ STATUS : ALL 4 HARNESS GATES GREEN (Return Code: 0)
 
 ## 6. Repository Topology
 
-See [UPGRADE_V2.md](./UPGRADE_V2.md) for full v3.0 specifications.
+See [UPGRADE_V2.md](./UPGRADE_V2.md) for full v3.0 and v3.1 kernel hardening specifications.
 
 ```text
 .
 ├── AGENTS.md                        # Antigravity / Codex / OpenCode / Cursor / Pi entry
 ├── CLAUDE.md                        # Claude Code entry
-├── UPGRADE_V2.md                    # Pstack v3.0 dual-role isolation and upgrade specs
+├── UPGRADE_V2.md                    # Pstack v3.0 and v3.1 kernel hardening specifications
 ├── benchmarks/                      # Reproducible benchmark reports (latest-report.md, latest-metrics.json)
 ├── tests/                           # Standard library unit test suite (test_pstack_harness.py)
 ├── .cursor/rules/pstack.mdc         # Cursor IDE rules
@@ -194,8 +201,13 @@ See [UPGRADE_V2.md](./UPGRADE_V2.md) for full v3.0 specifications.
 │   │   └── principles/              # 5 core principles (Unslop, No-Comments, Prove-It-Works)
 │   └── skills/pstack/SKILL.md       # Universal skill definition across 8 hosts
 └── scripts/
-    ├── pstack                       # Unified CLI (init|status|verify|correct|pause|pickup|onboard|bench|test|update)
+    ├── pstack                       # Unified CLI (init|status|route|run|swarm|arena|resume|tree|hook|mcp|verify|test|bench)
     ├── pstack_resolver.py           # PSTACK_HOME and WORKSPACE_ROOT overlay resolver
+    ├── pstack_router.py             # Bilingual Repo-Map and multi-language ranked symbol router
+    ├── pstack_scheduler.py          # Parallel Worktree DAG pool, 3-way Git merge, and auto-rework loop
+    ├── pstack_tree.py               # ASCII DAG tree and events.jsonl visualizer
+    ├── pstack_hook.py               # Git pre-commit hook manager (install|uninstall|status)
+    ├── pstack_mcp.py                # Zero-dependency JSON-RPC 2.0 Stdio MCP server (5 tools)
     ├── pstack_bench.py              # Reproducible compression and 12-case adversarial mutation benchmark
     ├── pstack_update.py             # Remote Git update checker and self-updater
     ├── pstack-verify.py             # 4-gate harness suite and verifier verdict evaluator
@@ -206,6 +218,6 @@ See [UPGRADE_V2.md](./UPGRADE_V2.md) for full v3.0 specifications.
     ├── verify-code-slop.py          # Comment Sicko and custom-code-rules.tsv validator
     ├── verify-handoff.py            # Subagent handoff bounds and AST #symbol auto-heal validator
     ├── log-decision.py              # Ledger logging tool for decision.tsv
-    ├── ag-spawn.sh                  # Resilient cross-CLI launcher with timeout and crash trap
+    ├── ag-spawn.sh                  # Resilient cross-CLI launcher with timeout, quarantine, and --max-rework
     └── bootstrap-repo.sh            # Global 8-host installer and project injector
 ```

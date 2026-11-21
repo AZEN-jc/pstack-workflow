@@ -1,12 +1,12 @@
 {
   "version": "3.0",
-  "elapsed_seconds": 0.562,
+  "elapsed_seconds": 1.005,
   "context_compression": {
     "naive_full_stuffing": {
       "files_count": 17,
-      "lines": 2213,
-      "bytes": 101738,
-      "tokens_est": 18813
+      "lines": 2268,
+      "bytes": 103893,
+      "tokens_est": 19223
     },
     "pstack_tier0_core": {
       "lines": 27,
@@ -14,10 +14,10 @@
       "tokens_est": 737
     },
     "pstack_tier0_plus_tier1_brief": {
-      "lines": 73,
-      "bytes": 5698,
-      "tokens_est": 1043,
-      "token_reduction_pct": 94.5
+      "lines": 71,
+      "bytes": 6629,
+      "tokens_est": 1240,
+      "token_reduction_pct": 93.5
     },
     "pstack_tier2_session_pickup": {
       "lines": 8,
@@ -127,7 +127,7 @@
       "control_gates_passed": "0/4 (0.0%)",
       "treatment_gates_passed": "4/4 (100.0%)",
       "treatment_verdict": "PASS",
-      "elapsed_sec": 0.128
+      "elapsed_sec": 0.2
     },
     {
       "task_id": "Task 2: feature-cli-subcmd",
@@ -138,7 +138,7 @@
       "control_gates_passed": "0/4 (0.0%)",
       "treatment_gates_passed": "4/4 (100.0%)",
       "treatment_verdict": "PASS",
-      "elapsed_sec": 0.124
+      "elapsed_sec": 0.193
     },
     {
       "task_id": "Task 3: refactor-slop-cleanup",
@@ -149,7 +149,7 @@
       "control_gates_passed": "0/4 (0.0%)",
       "treatment_gates_passed": "4/4 (100.0%)",
       "treatment_verdict": "PASS",
-      "elapsed_sec": 0.129
+      "elapsed_sec": 0.206
     }
   ],
   "abcd_experiments": {

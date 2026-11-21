@@ -6,10 +6,11 @@ WORKSPACE_ROOT="$(python3 "$SCRIPT_DIR/pstack_resolver.py" --workspace-root)"
 
 SPAWN_TIMEOUT="${PSTACK_SPAWN_TIMEOUT:-600}"
 PSTACK_CODEX_FLAGS="${PSTACK_CODEX_FLAGS:---full-auto}"
+MAX_REWORK="${PSTACK_MAX_REWORK:-0}"
 ARG1=""
 ARG2=""
 
-DO_QUARANTINE=1
+DO_QUARANTINE=$((1 - ${PSTACK_NO_QUARANTINE:-0}))
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --timeout)
@@ -18,6 +19,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --timeout=*)
       SPAWN_TIMEOUT="${1#*=}"
+      shift
+      ;;
+    --max-rework)
+      MAX_REWORK="${2:-0}"
+      shift 2
+      ;;
+    --max-rework=*)
+      MAX_REWORK="${1#*=}"
       shift
       ;;
     --no-quarantine)
@@ -65,6 +74,12 @@ fi
 
 WORKSPACE_ROOT="$(python3 -c 'import sys; from pathlib import Path; sys.path.insert(0, sys.argv[1]); from pstack_resolver import get_workspace_root; print(get_workspace_root(Path(sys.argv[2])))' "$SCRIPT_DIR" "$BRIEF_FILE")"
 export PSTACK_WORKSPACE="$WORKSPACE_ROOT"
+
+if [[ "$MAX_REWORK" =~ ^[0-9]+$ ]] && [[ "$MAX_REWORK" -gt 0 ]]; then
+  export PSTACK_SPAWN_TIMEOUT="$SPAWN_TIMEOUT"
+  export PSTACK_NO_QUARANTINE="$((1 - DO_QUARANTINE))"
+  exec python3 "$SCRIPT_DIR/pstack_scheduler.py" auto-rework --brief "$BRIEF_FILE" --runner "$RUNNER" --max-rework "$MAX_REWORK"
+fi
 
 echo ">>> [pstack gate] Validating handoff brief & ledger before spawning subagent..."
 python3 "$SCRIPT_DIR/verify-handoff.py" "$BRIEF_FILE" --fix

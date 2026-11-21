@@ -144,10 +144,17 @@ pstack pickup
 pstack update --check
 pstack update
 
-# 运行标准库单元测试套件与 0 Token 可复现基准测试 (生成 benchmarks/latest-report.md)
+# 运行标准库单元测试、0 Token 可复现基准与 MCP 自检
 pstack test
 pstack bench
+pstack mcp --self-test
 pstack verify handoff --fix
+
+# 中英双语 Repo-Map 路由、有界自动返工、真并行 Swarm 与 Git 提交前钩子
+pstack route "修复状态机超时恢复异常" --json
+pstack run "修复路由 Bug" --runner codex --max-rework 2
+pstack swarm --dry-run && pstack arena --dry-run && pstack tree
+pstack hook install && pstack hook status
 ```
 
 完整的上下文压缩比与 12 组变异样本 100% 拦截实测数据请参阅 [benchmarks/latest-report.md](./benchmarks/latest-report.md) [离线实测 Offline-Measured]。
@@ -171,13 +178,13 @@ STATUS : ALL 4 HARNESS GATES GREEN (Return Code: 0)
 
 ## 6. 目录拓扑 (Repository Topology)
 
-完整 v3.0 升级规范请参阅 [UPGRADE_V2.md](./UPGRADE_V2.md)。
+完整 v3.0 与 v3.1 内核硬化规范请参阅 [UPGRADE_V2.md](./UPGRADE_V2.md)。
 
 ```text
 .
 ├── AGENTS.md                        # Antigravity / Codex / OpenCode / Cursor / Pi 极简入口
 ├── CLAUDE.md                        # Claude Code 自动加载入口
-├── UPGRADE_V2.md                    # Pstack v3.0 桌面端双角色隔离与可验证工程规范
+├── UPGRADE_V2.md                    # Pstack v3.0 与 v3.1 内核硬化工程规范
 ├── benchmarks/                      # 可复现基准测试报告 (latest-report.md, latest-metrics.json)
 ├── tests/                           # 标准库单元测试套件 (test_pstack_harness.py)
 ├── .cursor/rules/pstack.mdc         # Cursor IDE 自动加载规则
@@ -193,8 +200,13 @@ STATUS : ALL 4 HARNESS GATES GREEN (Return Code: 0)
 │   │   └── principles/              # 5 大底层铁律 (Unslop, No-Comments, Prove-It-Works 等)
 │   └── skills/pstack/SKILL.md       # 8 路宿主通用 Skill 定义
 └── scripts/
-    ├── pstack                       # 全局统一 CLI (init|status|verify|correct|pause|pickup|onboard|bench|test|update)
+    ├── pstack                       # 全局统一 CLI (init|status|route|run|swarm|arena|resume|tree|hook|mcp|verify|test|bench)
     ├── pstack_resolver.py           # PSTACK_HOME 与 WORKSPACE_ROOT 自发现及层叠解析器
+    ├── pstack_router.py             # 中英双语 Repo-Map 与多语言符号加权路由器
+    ├── pstack_scheduler.py          # 真并行 Worktree 层级池、三方 Git 合入与自动返工调度器
+    ├── pstack_tree.py               # ASCII 任务树与 events.jsonl 可视化引擎
+    ├── pstack_hook.py               # Git Pre-Commit 钩子管理器 (install|uninstall|status)
+    ├── pstack_mcp.py                # 零依赖 JSON-RPC 2.0 Stdio MCP 服务器 (暴露 5 大工具)
     ├── pstack_bench.py              # 可复现上下文压缩比与 12 组变异样本拦截基准测试套件
     ├── pstack_update.py             # 远程 Git 更新检查与跨 Agent 自同步工具
     ├── pstack-verify.py             # 四重门禁总控、Verifier 摘要与裁决校验器
@@ -205,6 +217,6 @@ STATUS : ALL 4 HARNESS GATES GREEN (Return Code: 0)
     ├── verify-code-slop.py          # Comment Sicko 与 custom-code-rules.tsv 校验器
     ├── verify-handoff.py            # 交接单行号边界校验与 AST #symbol 漂移自愈器
     ├── log-decision.py              # decision.tsv 实证入账工具
-    ├── ag-spawn.sh                  # 带超时保护与崩溃自动快照的跨宿主派发器
+    ├── ag-spawn.sh                  # 带超时保护、脏树隔离与 --max-rework 的跨宿主派发器
     └── bootstrap-repo.sh            # 8 路宿主全局安装与跨仓库注入脚本
 ```

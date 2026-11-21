@@ -39,6 +39,12 @@ case "$SUBCMD" in
   tree)
     exec python3 "$SCRIPT_DIR/pstack_tree.py" "$@"
     ;;
+  hook)
+    exec python3 "$SCRIPT_DIR/pstack-hook.py" "$@"
+    ;;
+  mcp)
+    exec python3 "$SCRIPT_DIR/pstack-mcp.py" "$@"
+    ;;
   verify)
     VERIFY_MODE="${1:-all}"
     shift || true
@@ -84,7 +90,7 @@ case "$SUBCMD" in
     exec python3 -m unittest discover -s "$PSTACK_HOME_DIR/tests" -q "$@"
     ;;
   *)
-    echo "Usage: pstack <init|status|path|route|run|swarm|arena|resume|tree|verify|correct|pause|pickup|onboard|export|update|check-update|spawn|log|ban|bench|test> [args...]"
+    echo "Usage: pstack <init|status|path|route|run|swarm|arena|resume|tree|hook|mcp|verify|test|bench|correct|pause|pickup|onboard|export|update|check-update|spawn|log|ban> [args...]"
     exit 2
     ;;
 esac
