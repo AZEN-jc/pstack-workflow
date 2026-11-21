@@ -1,95 +1,106 @@
-# Pstack v3.0: Protocol Stack Multi-Agent Harness
+# Pstack v3.1: Universal Agent Orchestration & Verification Engine
 
 <p align="center"><b>English</b> | <b><a href="./README_ZH.md">简体中文</a></b></p>
 
 <p align="center">
   <a href="https://github.com/AZEN-jc/pstack-workflow/actions/workflows/pstack-ci.yml"><img src="https://github.com/AZEN-jc/pstack-workflow/actions/workflows/pstack-ci.yml/badge.svg" alt="Pstack CI" /></a>
-  <img src="https://img.shields.io/badge/Architecture-Dual--Tab_v3.0_Harness-2563EB?style=flat-square" alt="Architecture" />
-  <img src="https://img.shields.io/badge/Context_Budget-Tier_0_%E2%89%A4_48_Lines-7C3AED?style=flat-square" alt="Context Budget" />
-  <img src="https://img.shields.io/badge/Verification-4_Deterministic_Gates-10B981?style=flat-square" alt="Verification" />
+  <img src="https://img.shields.io/badge/Engine-v3.1_Worktree_Swarm_%26_Arena-2563EB?style=flat-square" alt="Architecture" />
+  <img src="https://img.shields.io/badge/Router-Bilingual_Repo--Map_(7_Langs)-7C3AED?style=flat-square" alt="Router" />
+  <img src="https://img.shields.io/badge/Verification-4_Gates_%2B_Auto--Rework-10B981?style=flat-square" alt="Verification" />
 </p>
 
 <p align="center">
-  <a href="https://github.com/AZEN-jc/pstack-workflow"><img src="https://img.shields.io/badge/Ecosystem-8_Local_Hosts_Mounted-06B6D4?style=flat-square" alt="Ecosystem" /></a>
-  <a href="https://github.com/AZEN-jc/pstack-workflow"><img src="https://img.shields.io/badge/Handoff-Pointer--Only_(15_Lines_Max)-F97316?style=flat-square" alt="Handoff" /></a>
-  <a href="https://github.com/AZEN-jc/pstack-workflow"><img src="https://img.shields.io/badge/Session_Snapshot-%E2%89%A4_20_Lines_Pickup-E11D48?style=flat-square" alt="Snapshot" /></a>
+  <a href="https://github.com/AZEN-jc/pstack-workflow"><img src="https://img.shields.io/badge/Ecosystem-8_Hosts_%2B_Stdio_MCP_Server-06B6D4?style=flat-square" alt="Ecosystem" /></a>
+  <a href="https://github.com/AZEN-jc/pstack-workflow"><img src="https://img.shields.io/badge/Isolation-3--Way_Git_Merge_%2B_Scope_Lock-F97316?style=flat-square" alt="Isolation" /></a>
+  <a href="https://github.com/AZEN-jc/pstack-workflow"><img src="https://img.shields.io/badge/Tests-25_Unit_Tests_%2B_ABCD_Bench-E11D48?style=flat-square" alt="Benchmark" /></a>
 </p>
 
-> Deterministic protocol stack and 4-gate verification harness for coding agents [Offline-Measured].
-> Left unconstrained, coding agents hallucinate imports and generate verbose conversational filler.
+> Client-agnostic task router, parallel Git worktree scheduler, and 4-gate verification engine for coding agents [Offline-Measured].
+> Left unconstrained, coding agents hallucinate imports and overwrite concurrent work across shared branches.
 > They paste unvetted diffs across broken paths before exhausting context windows.
-> Pstack v3.0 replaces conversational trust with 4 mechanical gates and dual-tab role isolation.
-> Static playbooks and volatile projects stay physically decoupled across 8 local hosts.
+> Pstack v3.1 replaces conversational trust with bilingual Repo-Map routing, isolated worktree execution, bounded auto-rework loops, and physical pre-commit gates.
+> Static playbooks and volatile projects stay physically decoupled across 8 local hosts and native MCP clients.
 
 ---
 
-## 1. ELI5: What is Pstack?
+## 1. ELI5: What is Pstack v3.1?
 
 > **TL;DR for Humans**  
-> Conventional multi-agent setups act like newcomers exchanging pleasantries in group chats. They paste hundreds of code lines, blowing context windows and failing silently.  
-> Pstack v3.0 refactors agent workflows into industrial protocol stack constraints. The core stays under 48 lines. Task handoffs pass range pointers only. Dual desktop tabs isolate building from blind verification under 4 deterministic gates.
+> Conventional multi-agent setups act like newcomers chatting in a shared folder. They paste hundreds of code lines, collide on files, and declare broken builds tested.  
+> Pstack v3.1 turns agent workflows into an execution and verification engine. Give a one-line goal and the router extracts ranked AST pointers across 7 languages. Workers run in parallel Git worktrees under strict path locks, auto-rework gate failures, and merge via 3-way Git patches.
 
 AI coding failures stem from poor discipline, not weak models.
-Initial handoff payload compresses by 92.5% [Offline-Measured].
+Initial handoff payload compresses by 93.5% [Offline-Measured].
 Multi-turn session token delta depends on conversation depth [Sim-Verified].
 
-| Failure Mode | Conventional Agent Setup | Pstack v3.0 Deterministic Solution | Measured Payoff [Offline-Measured] |
+| Failure Mode | Conventional Agent Setup | Pstack v3.1 Deterministic Engine | Measured Payoff [Offline-Measured] |
 | :--- | :--- | :--- | :--- |
-| **Conversational Bloat** | Excessive politeness and verbose filler exhausting context windows. | **Tier 0 Minimal Core (≤48 lines)**. Immediate 3-line triage, mandatory 3-line draft restate header. | Baseline context compressed to ~450 tokens |
-| **Code Smells & Explosions** | Massive diffs pasted at once, introducing redundant comments and broken syntax. | **Pointer-Only Handoffs**. Handoffs pass `file:start-end` pointers only; code snippets capped at 15 lines. | Per-turn brief drops to 620 tokens |
-| **Conflicted Self-Review** | Agents declare their own code tested and approved without running builds. | **Gate 4 Runtime Digest + Blind Dual-Tab Review**. Auto-runs `verify_cmd`, records SHA256, 4-tier verdict in fresh tab. | Zero falsified test passes |
-| **Lost Session Resumption** | Re-pasting thousands of chat lines to resume work, repeating past failures. | **Zero-Token Offline Toolchain**. `pause/pickup` generates ≤20-line snapshots; `correct` registers regex bans. | Full session recovery in ~150 tokens |
+| **Manual Prompt & File Hunting** | Users memorize commands and manually hunt file paths for prompts. | **Bilingual Repo-Map Router (`pstack route/run`)**. Extracts CJK/English terms and ranks symbols across `.py/.ts/.js/.go/.rs/.sh` + `models.json` role routing. | 0-token routing in <50ms |
+| **Parallel File Collisions** | Multiple agents edit the same directory and overwrite each other. | **True Parallel Worktree Swarm & Arena (`pstack swarm/arena`)**. Concurrent wave execution in isolated Git worktrees, `allowed_paths` lock, and `git apply --3way` merge. | Zero cross-agent file corruption |
+| **Single-Shot Gate Failure** | Agent fails a lint or test check and stops for human cleanup. | **Bounded Auto-Rework Loop (`--max-rework 2`) & Crash Quarantine**. Injects gate failure digest into brief and spawns a fresh stateless retry; isolates crash diffs as `.patch`. | Autonomous self-healing retries |
+| **Conversational & Code Bloat** | Excessive filler and massive diffs with drifted line ranges. | **Tier 0 Core (≤48 lines) + AST Symbol Auto-Heal (`file:start-end#symbol`)**. Auto-relocates drifted line ranges via `--fix` and caps inline blocks at 15 lines. | Handoff payload cut by 93.5% |
+| **Conflicted Self-Review** | Agents declare their own code tested without running real checks. | **Gate 4 Composite Toolchain + Blind Verifier (`--blind`)**. Runs `Test + Lint + Typecheck`, records SHA256, and strips Builder narrative for Tab 2 blind review. | 12/12 adversarial mutations caught |
+| **Bypassed Verification** | Agents commit directly to Git without running verification commands. | **Physical Pre-Commit Hook (`pstack hook`) & Native MCP Server (`pstack mcp`)**. Enforces scope and code gates at `git commit` time; exposes 5 JSON-RPC 2.0 Stdio MCP tools. | 100% commit-time gate enforcement |
 
 ---
 
-## 2. Core Architecture: 3-Tier Context Budgeting & Dual-Tab Isolation
+## 2. Core Architecture: Repo-Map Router, Parallel Worktrees & 4-Gate Auto-Rework
 
 Running pstack needs no manual playbook copying. Decoupled templates ensure zero-break execution [Offline-Measured].
 
 ```text
-                       +---------------------------------------+
-                       |  Desktop Host (Tab 1 Builder / Tab 2) |
-                       +---------------------------------------+
-                                           |
-                        /pstack-build -> verify all -> /pstack-verify
-                                           v
-                       +---------------------------------------+
-                       |       pstack_resolver.py (3-Tier)     |
-                       +---------------------------------------+
-                                     /           \
-            Overlay Fallback        /             \   Local Workspace
-                                   v               v
-             +--------------------------+    +--------------------------+
-             | PSTACK_HOME (Template)   |    | WORKSPACE_ROOT (Project) |
-             |  ~/.config/pstack/home   |    |  /path/to/any/repo       |
-             +--------------------------+    +--------------------------+
-             | - pstack-core.md (≤48 L) |    | - .agents/decision.tsv   |
-             | - playbooks/ (6 books)   |    | - .agents/handoffs/      |
-             | - custom-code-rules.tsv  |    |   * active-brief.md      |
-             | - 4-gate harnesses       |    |   * evidence-pack.md     |
-             | - correct/session/onboard|    |   * output-draft/final   |
-             +--------------------------+    +--------------------------+
+                 User Goal: pstack run "修复状态机超时恢复异常" --max-rework 2
+                                            |
+                                            v
+           +-----------------------------------------------------------------+
+           | 1. Bilingual Repo-Map Router (pstack_router.py + models.json)   |
+           |    - Intent & Complexity -> fast_tier (Flash) / deep_tier (Pro) |
+           |    - Multi-lang AST/Regex symbol ranking (.py/.ts/.go/.rs/.sh)  |
+           +-----------------------------------------------------------------+
+                                            |
+                                            v
+           +-----------------------------------------------------------------+
+           | 2. Parallel Worktree Scheduler (pstack_scheduler.py)            |
+           |    - Swarm Wave ThreadPool / Arena Competing Candidates         |
+           |    - Ephemeral Git Worktrees (.agents/worktrees/<node_id>)      |
+           |    - allowed_paths Scope Lock + Dirty-Tree Crash Patch Rollback |
+           +-----------------------------------------------------------------+
+                                            |
+                         +------------------+------------------+
+                         |   4 Deterministic Gates (Gate 1-4)  |
+                         |   Pass? ----No (r <= max_rework)----+--> Inject Failure Digest
+                         +------------------+------------------+    & Spawn Fresh Retry
+                                            | Yes
+                                            v
+           +-----------------------------------------------------------------+
+           | 3. git apply --3way Merge + Blind Verifier (--blind) + Verdict  |
+           |    - Pre-Commit Hook (.git/hooks/pre-commit) & Stdio MCP Server |
+           |    - DAG Checkpoints (dag-state.json) & ASCII Tree (pstack tree)|
+           +-----------------------------------------------------------------+
 ```
 
 - **Tier 0 Resident Routing (`pstack-core.md` ≤ 48 lines)**: Minimal 3-line entry mandates every agent to read `.agents/pstack/pstack-core.md` first [Offline-Measured].
-- **Tier 1 Dual-Zone Evidence Pack (`evidence-pack.md`)**: Preserves static line pointers alongside Gate 4 generated `## Runtime Verification Digest` (exit code, 12-char SHA256, last 10 log lines) [Sim-Verified].
-- **Desktop Dual-Tab Isolation**: Tab 1 runs `/pstack-build` for implementation and 4-gate validation. Fresh Tab 2 runs `/pstack-verify`, emits 4-tier verdict (`ACT_ON / CONSIDER / NOTED / DISMISSED`), and exports sanitized `output-final.md` [Sim-Verified].
-- **Tier 2 Zero-Token Offline Toolchain (`correct / pause / pickup / onboard`)**: Consumes 0 tokens during normal operation, output strictly capped at 20 lines when invoked [Offline-Measured].
+- **Bilingual Repo-Map & 5-Role Model Matrix (`models.json`)**: Maps `coordinator`, `architect`, `builder`, `reviewer`, and `verifier` across vendor-agnostic `fast_tier` and `deep_tier` models [Offline-Measured].
+- **Parallel Worktree Pool & 3-Way Git Merge**: Executes independent DAG waves concurrently, enforces `allowed_paths` boundaries, and merges non-overlapping edits and file deletions via `git apply --3way` [Sim-Verified].
+- **Bounded Auto-Rework & Blind Dual-Tab Verification**: Automatically retries failed gates up to `--max-rework` times with fresh subagents, then generates a ≤25-line `--blind` review pack for independent Tab 2 verdict [Sim-Verified].
+- **Physical Pre-Commit Hook & Zero-Dependency MCP Server**: Locks verification into `.git/hooks/pre-commit` and exposes `pstack_route`, `pstack_verify`, `pstack_swarm`, `pstack_arena`, and `pstack_tree` over JSON-RPC 2.0 Stdio [Offline-Measured].
 
 ---
 
-## 3. 8-Host Matrix & Global CLI Mounts
+## 3. 8-Host Matrix, Global CLI & Native MCP Mounts
 
-One bootstrap run mounts pstack across 8 hosts. Global CLI activates simultaneously in ~/.local/bin [Offline-Measured].
+One bootstrap run mounts pstack across 8 hosts. Global CLI executables activate simultaneously in ~/.local/bin [Offline-Measured].
 
 | Target Host | Global Mount Path | Project Auto Entry | Core Role |
 | :--- | :--- | :--- | :--- |
 | **Global Anchor (`PSTACK_HOME`)** | `~/.config/pstack/home` | Fallback root for `pstack_resolver.py` | Static playbook templates |
-| **Global CLI (`$PATH`)** | `~/.local/bin/{pstack,pstack-verify,ag-spawn}` | Run `pstack` directly anywhere | Unified command-line interface |
+| **Global CLI (`$PATH`)** | `~/.local/bin/pstack*` (13 CLIs) | Run `pstack` directly anywhere | Unified command-line interface |
+| **Native MCP Server (`stdio`)** | `~/.local/bin/pstack-mcp` (`pstack mcp`) | JSON-RPC 2.0 Stdio (5 MCP tools) | Native tool calling for MCP hosts |
+| **Git Pre-Commit Hook** | `.git/hooks/pre-commit` (`pstack hook install`) | Automatic commit-time gate check | Physical anti-bypass enforcement |
 | **Antigravity (`agy`)** | `~/.gemini/config/skills/pstack` | `AGENTS.md` + `SKILL.md` | Native subagent orchestration |
 | **Claude Code (`claude`)** | `~/.claude/skills/pstack` | `CLAUDE.md` | Automated terminal workflow |
-| **Codex CLI & App (`codex`)** | `~/.codex/skills/pstack` | `AGENTS.md` | Dual-tab drills and blind verification |
-| **OpenCode (`opencode`)** | `~/.config/opencode/skills/pstack` + `command/*.md` | `AGENTS.md` + 7 slash commands | Slash command workspace |
+| **Codex CLI & App (`codex`)** | `~/.codex/skills/pstack` | `AGENTS.md` | Worktree drills and blind verification |
+| **OpenCode (`opencode`)** | `~/.config/opencode/skills/pstack` + `command/*.md` | `AGENTS.md` + 9 slash commands | Slash command workspace |
 | **Cursor IDE (`cursor`)** | `~/.cursor/skills-cursor/pstack` | `.cursor/rules/pstack.mdc` + `AGENTS.md` | In-editor rule enforcement |
 | **WorkBuddy AI (`workbuddy`)** | `~/.workbuddy-ai/skills/pstack` | `AGENTS.md` + `SKILL.md` | Desktop dual-tab workspace host |
 | **Pi Agent (`pi`)** | `~/.pi/agent/skills/pstack` | `AGENTS.md` + `SKILL.md` | Minimal desktop and terminal host |
