@@ -1,4 +1,4 @@
-# Pstack v3.1: Universal Agent Orchestration & Verification Engine
+# Pstack: Deterministic Worktree Swarm & 4-Gate Verification Engine for Coding Agents
 
 <p align="center"><b>English</b> | <b><a href="./README_ZH.md">简体中文</a></b></p>
 
@@ -175,7 +175,7 @@ See [benchmarks/latest-report.md](./benchmarks/latest-report.md) for full benchm
 
 ```text
 ====================================================================
-PSTACK v3.0 FOUR-GATE VERIFICATION SUITE
+PSTACK v3.1 FOUR-GATE VERIFICATION SUITE
 ====================================================================
 [1/4] Handoff Brief Check   : .agents/handoffs/active-brief.md -> PASS (Schema V3 + Symbol Auto-Heal)
 [2/4] Prose & Restate Check : .agents/handoffs/output-draft.md -> PASS (Builder Restate + 0 slop)

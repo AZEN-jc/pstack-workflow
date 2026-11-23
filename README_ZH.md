@@ -1,4 +1,4 @@
-# Pstack v3.1: Universal Agent Orchestration & Verification Engine
+# Pstack：面向编程 Agent 的确定性 Worktree 并行调度与 4-Gate 验证引擎
 
 <p align="center"><b><a href="./README.md">English</a></b> | <b>简体中文</b></p>
 
@@ -174,7 +174,7 @@ pstack hook install && pstack hook status
 
 ```text
 ====================================================================
-PSTACK v3.0 FOUR-GATE VERIFICATION SUITE
+PSTACK v3.1 FOUR-GATE VERIFICATION SUITE
 ====================================================================
 [1/4] Handoff Brief Check   : .agents/handoffs/active-brief.md -> PASS (Schema V3 + Symbol Auto-Heal)
 [2/4] Prose & Restate Check : .agents/handoffs/output-draft.md -> PASS (Builder Restate + 0 slop)
