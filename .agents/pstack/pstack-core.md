@@ -24,4 +24,9 @@
 - **桌面端同宿主双 Tab 闭环（OpenCode / Codex / WorkBuddy / Pi / Claude / Cursor / AGY）**：
   1. **Tab 1 Builder（`/pstack-build`）**：读取 `active-brief.md`，在 `output-draft.md` 顶部前 6 行写入 3 行内 `> [Builder Restate]`，执行实现后运行 `pstack verify all`（自动触发 Gate 4 执行 `verify_cmd` 并将 SHA256 与末尾 10 行写入 `evidence-pack.md`）。
   2. **Tab 2 Independent Verifier（新建空白 Tab 运行 `/pstack-verify`）**：运行 `pstack verify prep-verifier` 只读审查 `active-brief.md`、`evidence-pack.md` 与 `git diff --stat`，按 `ACT_ON / CONSIDER / NOTED / DISMISSED` 四级分类写入 `.agents/handoffs/verifier-verdict.md` 并标注 `VERDICT: PASS | REJECT`，最后执行 `pstack verify verdict` 自动导出剥离复述头的干净定稿 `output-final.md`。
-- **零 Token 辅助工具链**：路由建单用 `pstack route/run`；隔离调度用 `pstack swarm/arena/resume/tree`；五层纠错与断点续传用 `pstack correct/pause/pickup`。
+- **全自动前置漏斗（默认生效，人类只做决策）**：收到需求先做 L0/L1/L2 混合分诊（可零 Token 调用 `pstack auto "<需求>" --json` 或 MCP `pstack_triage`）：
+  1. **L0 琐碎小改**：零打扰，直接走 `pstack route` 与执行门禁；
+  2. **L1 清晰有深度**：严禁先改代码，自动按 `.agents/skills/sharpen/SKILL.md` 深化并暂存 `.agents/handoffs/sharpened-prompt.md`，停在**单次决策门**（用交互选项或编号菜单让你拍板「确认开干 / 仅建单 / 调方向」）；
+  3. **L2 概念模糊/多义**：严禁先改代码，自动先跑 `.agents/skills/reframe/SKILL.md`（若方向单一则一气呵成串接 `/sharpen` 合并停 1 次；若存在 2-3 个本质不同方向则先停 1 次选方向再深化）；
+  4. **拍板即全自动执行**：你确认开干后，宿主自动执行 `pstack route --from-sharpen`（或 MCP `pstack_route(from_sharpen=true)`）→ 派发全新子 Agent（或 `pstack run --from-sharpen --max-rework 2`）→ 自动过 `pstack verify all` 4-Gate 交付，无需你手敲终端命令。
+- **零 Token 辅助工具链**：全自动分诊用 `pstack auto`；路由建单用 `pstack route/run`；隔离调度用 `pstack swarm/arena/resume/tree`；五层纠错与断点续传用 `pstack correct/pause/pickup`。

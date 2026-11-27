@@ -121,8 +121,16 @@ def collect_files(targets: list[str]) -> list[Path]:
     return files
 
 
-def check_file(filepath: Path, custom_rules: list[tuple[str, str, str]]) -> list[str]:
+EXTERNAL_RULE_TAG_RE = re.compile(
+    r"^\s*(?:#|//)\s*(?:External-Rule|Platform-Quirk|Protocol-Constraint)\s*:",
+    re.IGNORECASE,
+)
+VERIFIED_WHY_TAG_RE = re.compile(r"\b(?:Why|Ref)\s*:|https?://|\bRFC\s*\d+\b", re.IGNORECASE)
+
+
+def analyze_file(filepath: Path, custom_rules: list[tuple[str, str, str]]) -> tuple[list[str], list[str]]:
     errors: list[str] = []
+    review_notices: list[str] = []
     text = filepath.read_text(encoding="utf-8")
     lines = text.splitlines()
 
@@ -132,6 +140,15 @@ def check_file(filepath: Path, custom_rules: list[tuple[str, str, str]]) -> list
     for idx, line in enumerate(lines, 1):
         stripped = line.strip()
         if idx == 1 and stripped.startswith("#!"):
+            continue
+
+        is_external_rule = bool(EXTERNAL_RULE_TAG_RE.search(line))
+        if is_external_rule:
+            block_has_why_tag = True
+            review_notices.append(
+                f"{filepath.name}:{idx} [REVIEW: External Rule]: 保留外部约束注释待人工/Verifier 复核 -> `{stripped[:60]}`"
+            )
+            consecutive_comments += 1
             continue
 
         for pat in SLOP_COMMENT_PATTERNS:
@@ -149,11 +166,15 @@ def check_file(filepath: Path, custom_rules: list[tuple[str, str, str]]) -> list
         is_comment = stripped.startswith("#") or stripped.startswith("//")
         if is_comment:
             consecutive_comments += 1
-            if re.search(r"\b(?:Why|Constraint|Ref|https?://):", stripped):
+            if VERIFIED_WHY_TAG_RE.search(stripped) or re.search(r"\bConstraint\s*:", stripped):
                 block_has_why_tag = True
+                if re.search(r"\bConstraint\s*:", stripped) and not VERIFIED_WHY_TAG_RE.search(stripped):
+                    review_notices.append(
+                        f"{filepath.name}:{idx} [REVIEW: External Rule]: `Constraint:` 未附外部链接/RFC，请确认是否可转为代码断言 -> `{stripped[:60]}`"
+                    )
             if consecutive_comments > 4 and not block_has_why_tag:
                 errors.append(
-                    f"{filepath.name}:{idx} [Comment Bloat]: 连续超过 4 行注释且未标注 `Why:` 或 `Constraint:`，请改为代码断言或提取函数。"
+                    f"{filepath.name}:{idx} [Comment Bloat]: 连续超过 4 行注释且未标注 `Why:` 或 `External-Rule:`，请改为代码断言或提取函数。"
                 )
         else:
             consecutive_comments = 0
@@ -163,6 +184,11 @@ def check_file(filepath: Path, custom_rules: list[tuple[str, str, str]]) -> list
         if re.search(pat, text):
             errors.append(f"{filepath.name} [Swallowed Exception]: {msg}")
 
+    return errors, review_notices
+
+
+def check_file(filepath: Path, custom_rules: list[tuple[str, str, str]]) -> list[str]:
+    errors, _ = analyze_file(filepath, custom_rules)
     return errors
 
 
@@ -177,12 +203,20 @@ def main() -> int:
     custom_rules = load_custom_code_rules(workspace_root)
 
     all_errors: list[str] = []
+    all_reviews: list[str] = []
     for f in files:
-        all_errors.extend(check_file(f, custom_rules))
+        errs, reviews = analyze_file(f, custom_rules)
+        all_errors.extend(errs)
+        all_reviews.extend(reviews)
 
     print("=" * 68)
     print(f"PSTACK COMMENT SICKO & CODE SLOP HARNESS ({len(files)} files, {len(custom_rules)} custom rules)")
     print("=" * 68)
+    if all_reviews:
+        print(f"REVIEW ADVISORIES ({len(all_reviews)} non-blocking external-rule keeps):")
+        for note in all_reviews:
+            print(f"  ! {note}")
+        print("-" * 68)
     if not all_errors:
         print("STATUS : ALL CHECKS GREEN (0 redundant comments, swallowed exceptions, or custom rule hits)")
         print("=" * 68)

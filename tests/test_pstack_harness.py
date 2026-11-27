@@ -50,6 +50,16 @@ from pstack_tree import (
     load_tree_data,
     render_ascii_tree,
 )
+from pstack_update import (
+    auto_sync_if_needed,
+    get_agents_sync_status,
+    sync_all_coding_agents,
+)
+
+try:
+    import tomllib
+except ImportError:  # pragma: no cover
+    tomllib = None
 
 
 def _load_mod(name: str, filename: str):
@@ -1144,7 +1154,7 @@ Test pointer auto healing.
             tool_names = [t["name"] for t in tools]
             self.assertEqual(
                 tool_names,
-                ["pstack_route", "pstack_verify", "pstack_swarm", "pstack_arena", "pstack_tree"],
+                ["pstack_triage", "pstack_route", "pstack_verify", "pstack_swarm", "pstack_arena", "pstack_tree"],
             )
 
             route_data = json.loads(responses[2]["result"]["content"][0]["text"])
@@ -1263,6 +1273,382 @@ Test pointer auto healing.
             self.assertEqual(ct_resps[0]["result"], {})
             self.assertEqual(ct_resps[1]["id"], 21)
             self.assertEqual(ct_resps[1]["error"]["code"], -32602)
+
+    def test_auto_sync_all_coding_agents_directives_and_mcp(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp).resolve()
+            mcp_bin = str(home / ".local" / "bin" / "pstack-mcp")
+
+            directive_files = {
+                home / ".codex" / "AGENTS.md": "# Codex User Rules\nAlways run tests.\n",
+                home / ".config" / "opencode" / "AGENTS.md": "# OpenCode User Rules\nUse concise Chinese.\n",
+                home / ".claude" / "CLAUDE.md": "# Claude User Rules\nPrefer stdlib.\n",
+                home / ".workbuddy-ai" / "SOUL.md": "# WorkBuddy AI Soul\nBe direct.\n",
+                home / ".workbuddy" / "SOUL.md": "# WorkBuddy Legacy Soul\nStay practical.\n",
+            }
+            old_block = (
+                "# Pstack Directives (Old Nov 7 Edition)\n"
+                "1. 收到任务先看 pstack-core.md。\n"
+                "2. 旧版两步规则。\n"
+            )
+            for path, user_header in directive_files.items():
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(user_header + "\n" + old_block, encoding="utf-8")
+
+            codex_toml = home / ".codex" / "config.toml"
+            codex_toml.write_text(
+                '# User comment preserved\n'
+                'model = "gpt-5"\n\n'
+                '[mcp_servers.other]\n'
+                'command = "other-mcp"\n'
+                'args = ["--port", "8080"]\n\n'
+                '[projects."/tmp/demo"]\n'
+                'trust_level = "trusted"\n',
+                encoding="utf-8",
+            )
+
+            opencode_json = home / ".config" / "opencode" / "opencode.json"
+            opencode_json.write_text(
+                json.dumps(
+                    {
+                        "model": "anthropic/claude-sonnet",
+                        "mcp": {
+                            "rea": {"type": "local", "command": ["rea-mcp"], "enabled": True},
+                        },
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            claude_json = home / ".claude.json"
+            claude_json.write_text(
+                json.dumps(
+                    {
+                        "userID": "user-123",
+                        "pluginUsage": {"demo": {"usageCount": 3}},
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            cursor_mcp = home / ".cursor" / "mcp.json"
+            cursor_mcp.parent.mkdir(parents=True, exist_ok=True)
+            cursor_mcp.write_text(
+                json.dumps(
+                    {
+                        "mcpServers": {
+                            "existing_tool": {"command": "/usr/local/bin/tool", "args": ["--stdio"]},
+                        }
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            first_res = sync_all_coding_agents(REPO_ROOT, home_dir=home, quiet=True)
+            self.assertEqual(first_res["errors"], [])
+
+            expected_v31_tokens = (
+                ".agents/pstack/pstack-core.md",
+                "pstack route/run --max-rework 2",
+                "pstack swarm/arena/resume/tree",
+                "pstack hook/mcp",
+                "pstack verify all",
+            )
+            for path, user_header in directive_files.items():
+                text = path.read_text(encoding="utf-8")
+                self.assertTrue(text.startswith(user_header), f"User header lost in {path}")
+                self.assertNotIn("Old Nov 7 Edition", text)
+                self.assertEqual(text.count("# Pstack Directives"), 1)
+                self.assertIn("# Pstack Directives (v3.1", text)
+                for token in expected_v31_tokens:
+                    self.assertIn(token, text, f"Missing {token} in {path}")
+
+            toml_text = codex_toml.read_text(encoding="utf-8")
+            self.assertIn("# User comment preserved", toml_text)
+            if tomllib is not None:
+                parsed_toml = tomllib.loads(toml_text)
+                self.assertEqual(parsed_toml["model"], "gpt-5")
+                self.assertEqual(parsed_toml["mcp_servers"]["other"], {"command": "other-mcp", "args": ["--port", "8080"]})
+                self.assertEqual(parsed_toml["mcp_servers"]["pstack"], {"command": mcp_bin, "args": []})
+                self.assertEqual(parsed_toml["projects"]["/tmp/demo"]["trust_level"], "trusted")
+
+            oc_data = json.loads(opencode_json.read_text(encoding="utf-8"))
+            self.assertEqual(oc_data["model"], "anthropic/claude-sonnet")
+            self.assertEqual(oc_data["mcp"]["rea"], {"type": "local", "command": ["rea-mcp"], "enabled": True})
+            self.assertEqual(oc_data["mcp"]["pstack"], {"type": "local", "command": [mcp_bin], "enabled": True})
+
+            cl_data = json.loads(claude_json.read_text(encoding="utf-8"))
+            self.assertEqual(cl_data["userID"], "user-123")
+            self.assertEqual(cl_data["pluginUsage"]["demo"]["usageCount"], 3)
+            self.assertEqual(cl_data["mcpServers"]["pstack"], {"command": mcp_bin, "args": []})
+
+            cu_data = json.loads(cursor_mcp.read_text(encoding="utf-8"))
+            self.assertEqual(cu_data["mcpServers"]["existing_tool"], {"command": "/usr/local/bin/tool", "args": ["--stdio"]})
+            self.assertEqual(cu_data["mcpServers"]["pstack"], {"command": mcp_bin, "args": []})
+
+            self.assertTrue((home / ".workbuddy-ai" / "skills" / "pstack").is_symlink())
+            self.assertTrue((home / ".workbuddy" / "skills" / "pstack").is_symlink())
+            self.assertTrue((home / ".config" / "opencode" / "command" / "pstack-swarm.md").is_symlink())
+            self.assertTrue((home / ".config" / "opencode" / "command" / "pstack-mcp.md").is_symlink())
+
+            snapshot_before = {p: p.read_text(encoding="utf-8") for p in directive_files}
+            second_res = sync_all_coding_agents(REPO_ROOT, home_dir=home, quiet=True)
+            self.assertEqual(second_res["errors"], [])
+            for val in second_res["directives"].values():
+                self.assertEqual(val, "unchanged")
+            for val in second_res["mcp_configs"].values():
+                self.assertEqual(val, "unchanged")
+            for p, prev in snapshot_before.items():
+                self.assertEqual(p.read_text(encoding="utf-8"), prev)
+
+            auto_res1 = auto_sync_if_needed(REPO_ROOT, home_dir=home, quiet=True)
+            self.assertTrue(auto_res1["synced"])
+            stamp_file = home / ".config" / "pstack" / ".last_synced_commit"
+            self.assertTrue(stamp_file.is_file())
+            head_sha = stamp_file.read_text(encoding="utf-8").strip()
+            self.assertEqual(len(head_sha), 40)
+
+            auto_res2 = auto_sync_if_needed(REPO_ROOT, home_dir=home, quiet=True)
+            self.assertFalse(auto_res2["synced"])
+            self.assertEqual(auto_res2["reason"], "already_synced")
+
+            stamp_file.write_text("0000000000000000000000000000000000000000\n", encoding="utf-8")
+            auto_res3 = auto_sync_if_needed(REPO_ROOT, home_dir=home, quiet=True)
+            self.assertTrue(auto_res3["synced"])
+            self.assertEqual(stamp_file.read_text(encoding="utf-8").strip(), head_sha)
+
+            status_info = get_agents_sync_status(REPO_ROOT, home_dir=home)
+            self.assertTrue(all(v == "SYNCED_V3_1" for v in status_info["directives"].values()))
+            self.assertTrue(all(v == "REGISTERED" for v in status_info["mcp_configs"].values()))
+            self.assertEqual(status_info["head_commit"], head_sha)
+            self.assertEqual(status_info["last_synced_commit"], head_sha)
+
+            codex_toml.write_text(
+                '[mcp_servers.pstack]\ncommand = "/stale/pstack-mcp"\nargs = ["--old"]\n\n'
+                '[projects."/tmp/keep"]\ntrust_level = "trusted"\n',
+                encoding="utf-8",
+            )
+            update_res = sync_all_coding_agents(REPO_ROOT, home_dir=home, quiet=True)
+            self.assertEqual(update_res["mcp_configs"][".codex/config.toml"], "updated")
+            if tomllib is not None:
+                reparsed = tomllib.loads(codex_toml.read_text(encoding="utf-8"))
+                self.assertEqual(reparsed["mcp_servers"]["pstack"], {"command": mcp_bin, "args": []})
+                self.assertEqual(reparsed["projects"]["/tmp/keep"]["trust_level"], "trusted")
+
+            bad_json_raw = "{not valid json"
+            cursor_mcp.write_text(bad_json_raw, encoding="utf-8")
+            err_res = sync_all_coding_agents(REPO_ROOT, home_dir=home, quiet=True)
+            self.assertTrue(any(".cursor/mcp.json" in e for e in err_res["errors"]))
+            self.assertEqual(cursor_mcp.read_text(encoding="utf-8"), bad_json_raw)
+
+    def test_companion_skills_and_codex_openai_yaml(self) -> None:
+        core_lines = (REPO_ROOT / ".agents" / "pstack" / "pstack-core.md").read_text(encoding="utf-8").splitlines()
+        self.assertLessEqual(len(core_lines), 48)
+
+        for skill_name in ("reframe", "sharpen"):
+            skill_dir = REPO_ROOT / ".agents" / "skills" / skill_name
+            skill_md = skill_dir / "SKILL.md"
+            openai_yaml = skill_dir / "agents" / "openai.yaml"
+            opencode_cmd = REPO_ROOT / "adapters" / "opencode" / "commands" / f"{skill_name}.md"
+            self.assertTrue(skill_md.is_file(), f"Missing {skill_md}")
+            self.assertTrue(openai_yaml.is_file(), f"Missing {openai_yaml}")
+            self.assertTrue(opencode_cmd.is_file(), f"Missing {opencode_cmd}")
+
+            md_text = skill_md.read_text(encoding="utf-8")
+            self.assertIn("disable-model-invocation: true", md_text)
+            yaml_text = openai_yaml.read_text(encoding="utf-8")
+            self.assertIn("allow_implicit_invocation: false", yaml_text)
+
+    def test_router_from_sharpen_staging(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp).resolve()
+            ensure_workspace_skeleton(ws)
+            (ws / "scheduler.py").write_text("def merge_worktree():\n    return True\n", encoding="utf-8")
+
+            env = os.environ.copy()
+            env["PSTACK_WORKSPACE"] = str(ws)
+
+            missing_proc = subprocess.run(
+                [sys.executable, str(SCRIPTS_DIR / "pstack_router.py"), "route", "--from-sharpen"],
+                cwd=ws,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertNotEqual(missing_proc.returncode, 0)
+
+            staged = ws / ".agents" / "handoffs" / "sharpened-prompt.md"
+            staged.write_text("修复 scheduler merge_worktree 边界回归并补充客观行为测试", encoding="utf-8")
+
+            route_proc = subprocess.run(
+                [sys.executable, str(SCRIPTS_DIR / "pstack_router.py"), "route", "--from-sharpen", "--json"],
+                cwd=ws,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(route_proc.returncode, 0, route_proc.stderr)
+            payload = json.loads(route_proc.stdout)
+            self.assertEqual(payload["status"], "ROUTED")
+            self.assertIn("merge_worktree", payload["goal"])
+            brief_text = (ws / ".agents" / "handoffs" / "active-brief.md").read_text(encoding="utf-8")
+            self.assertIn("merge_worktree", brief_text)
+
+            run_proc = subprocess.run(
+                [sys.executable, str(SCRIPTS_DIR / "pstack_router.py"), "run", "--from-sharpen", "--dry-run"],
+                cwd=ws,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(run_proc.returncode, 0, run_proc.stderr)
+
+    def test_multi_skill_agent_sync(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp).resolve()
+            for rel_dir in (
+                ".gemini/config",
+                ".claude",
+                ".codex",
+                ".config/opencode",
+                ".cursor",
+                ".workbuddy-ai",
+                ".workbuddy",
+                ".pi/agent",
+                ".agents",
+            ):
+                (home / rel_dir).mkdir(parents=True, exist_ok=True)
+
+            res = sync_all_coding_agents(REPO_ROOT, home_dir=home, quiet=True)
+            self.assertEqual(res["errors"], [])
+
+            for skill_name in ("pstack", "reframe", "sharpen"):
+                expected_src = (REPO_ROOT / ".agents" / "skills" / skill_name).resolve()
+                for target_rel in (
+                    f".gemini/config/skills/{skill_name}",
+                    f".claude/skills/{skill_name}",
+                    f".codex/skills/{skill_name}",
+                    f".config/opencode/skills/{skill_name}",
+                    f".cursor/skills-cursor/{skill_name}",
+                    f".workbuddy-ai/skills/{skill_name}",
+                    f".workbuddy/skills/{skill_name}",
+                    f".pi/agent/skills/{skill_name}",
+                    f".agents/skills/{skill_name}",
+                ):
+                    link_path = home / target_rel
+                    self.assertTrue(link_path.is_symlink(), f"Missing symlink: {target_rel}")
+                    self.assertEqual(link_path.resolve(), expected_src)
+
+            self.assertTrue((home / ".config" / "opencode" / "command" / "reframe.md").is_symlink())
+            self.assertTrue((home / ".config" / "opencode" / "command" / "sharpen.md").is_symlink())
+
+    def test_comment_sicko_external_rule_review_tier(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp).resolve()
+            ext_file = ws / "socket_client.py"
+            ext_file.write_text(
+                "# External-Rule: Safari drops WebSocket close frame 1006 under proxy idle\n"
+                "def close_socket(conn):\n"
+                "    return conn.close()\n",
+                encoding="utf-8",
+            )
+            errors, reviews = verify_code_slop.analyze_file(ext_file, [])
+            self.assertEqual(errors, [])
+            self.assertEqual(len(reviews), 1)
+            self.assertIn("[REVIEW: External Rule]", reviews[0])
+
+            cli_ok = subprocess.run(
+                [sys.executable, str(SCRIPTS_DIR / "verify-code-slop.py"), str(ext_file)],
+                cwd=ws,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(cli_ok.returncode, 0)
+            self.assertIn("REVIEW ADVISORIES", cli_ok.stdout)
+
+            slop_file = ws / "bad_slop.py"
+            slop_file.write_text(
+                "# Validate input parameters\n"
+                "def f(x):\n"
+                "    return x\n",
+                encoding="utf-8",
+            )
+            cli_fail = subprocess.run(
+                [sys.executable, str(SCRIPTS_DIR / "verify-code-slop.py"), str(slop_file)],
+                cwd=ws,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(cli_fail.returncode, 1)
+
+    def test_auto_funnel_clarity_triage_and_approved_execution(self) -> None:
+        from pstack_router import assess_clarity
+
+        l2 = assess_clarity("我想做一个让多个 AI 改代码不冲突的调度器但不知道怎么叫")
+        self.assertEqual(l2["level"], "L2_FUZZY")
+        self.assertTrue(l2["requires_decision"])
+        self.assertEqual(l2["recommended_pipeline"][:2], ["reframe", "sharpen"])
+
+        l1 = assess_clarity("重构 scripts/pstack_scheduler.py 的 WorktreeSandbox 并行合并架构与状态恢复")
+        self.assertEqual(l1["level"], "L1_CLEAR_DEEP")
+        self.assertTrue(l1["requires_decision"])
+        self.assertEqual(l1["recommended_pipeline"][0], "sharpen")
+
+        l0 = assess_clarity("修复 README.md 里的 typo 拼写错误")
+        self.assertEqual(l0["level"], "L0_TRIVIAL")
+        self.assertFalse(l0["requires_decision"])
+
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp).resolve()
+            ensure_workspace_skeleton(ws)
+            (ws / "engine.py").write_text("def run_pipeline():\n    return 0\n", encoding="utf-8")
+            brief_before = (ws / ".agents" / "handoffs" / "active-brief.md").read_text(encoding="utf-8")
+
+            env = os.environ.copy()
+            env["PSTACK_WORKSPACE"] = str(ws)
+
+            triage_proc = subprocess.run(
+                [sys.executable, str(SCRIPTS_DIR / "pstack_router.py"), "auto", "我想搞个类似自动分诊的机制", "--json"],
+                cwd=ws,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(triage_proc.returncode, 0, triage_proc.stderr)
+            triage_data = json.loads(triage_proc.stdout)
+            self.assertEqual(triage_data["status"], "AWAITING_DECISION")
+            self.assertEqual(triage_data["clarity"]["level"], "L2_FUZZY")
+            self.assertEqual(
+                (ws / ".agents" / "handoffs" / "active-brief.md").read_text(encoding="utf-8"),
+                brief_before,
+            )
+
+            staged = ws / ".agents" / "handoffs" / "sharpened-prompt.md"
+            staged.write_text("基于 engine.py#run_pipeline 实现确定性三档分诊并通过行为回归测试验证", encoding="utf-8")
+
+            approved_proc = subprocess.run(
+                [sys.executable, str(SCRIPTS_DIR / "pstack_router.py"), "auto", "--approved", "--dry-run"],
+                cwd=ws,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(approved_proc.returncode, 0, approved_proc.stderr)
+            brief_after = (ws / ".agents" / "handoffs" / "active-brief.md").read_text(encoding="utf-8")
+            self.assertIn("run_pipeline", brief_after)
 
 
 if __name__ == "__main__":

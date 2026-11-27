@@ -38,21 +38,29 @@ register_global_agents() {
   ln -sfn "$SOURCE_ROOT/scripts/ag-spawn.sh" "$HOME/.local/bin/ag-spawn"
   echo "[OK] Linked global CLIs in $HOME/.local/bin (pstack, pstack-router, pstack-scheduler, pstack-tree, pstack-hook, pstack-mcp, pstack-verify, pstack-correct, pstack-session, pstack-onboard, pstack-bench, pstack-update, ag-spawn)"
 
-  local skill_targets=(
-    "$HOME/.gemini/config/skills/pstack"
-    "$HOME/.claude/skills/pstack"
-    "$HOME/.codex/skills/pstack"
-    "$HOME/.config/opencode/skills/pstack"
-    "$HOME/.cursor/skills-cursor/pstack"
-    "$HOME/.workbuddy-ai/skills/pstack"
-    "$HOME/.pi/agent/skills/pstack"
-    "$HOME/.agents/skills/pstack"
+  local skill_bundles=("pstack" "reframe" "sharpen")
+  local skill_parent_dirs=(
+    "$HOME/.gemini/config/skills"
+    "$HOME/.claude/skills"
+    "$HOME/.codex/skills"
+    "$HOME/.config/opencode/skills"
+    "$HOME/.cursor/skills-cursor"
+    "$HOME/.workbuddy-ai/skills"
+    "$HOME/.workbuddy/skills"
+    "$HOME/.pi/agent/skills"
+    "$HOME/.agents/skills"
   )
 
-  for target in "${skill_targets[@]}"; do
-    mkdir -p "$(dirname "$target")"
-    ln -sfn "$SKILL_SOURCE" "$target"
-    echo "[OK] Linked global skill: $target -> $SKILL_SOURCE"
+  for skill_name in "${skill_bundles[@]}"; do
+    local src_dir="$SOURCE_ROOT/.agents/skills/$skill_name"
+    if [[ ! -d "$src_dir" ]]; then
+      continue
+    fi
+    for parent_dir in "${skill_parent_dirs[@]}"; do
+      mkdir -p "$parent_dir"
+      ln -sfn "$src_dir" "$parent_dir/$skill_name"
+      echo "[OK] Linked global skill: $parent_dir/$skill_name -> $src_dir"
+    done
   done
 
   local opencode_cmd_dir="$HOME/.config/opencode/command"
@@ -63,24 +71,38 @@ register_global_agents() {
     ln -sfn "$cmd_file" "$opencode_cmd_dir/$base_name"
     echo "[OK] Linked OpenCode command: $opencode_cmd_dir/$base_name -> $cmd_file"
   done
+
+  if [[ "${PSTACK_SKIP_BOOTSTRAP_SYNC:-0}" != "1" ]]; then
+    python3 "$SOURCE_ROOT/scripts/pstack_update.py" --sync-agents
+  fi
 }
 
 print_status() {
   echo "===================================================================="
-  echo "PSTACK v3.0 MULTI-AGENT & GLOBAL CLI MOUNT STATUS"
+  echo "PSTACK v3.2 MULTI-AGENT & GLOBAL CLI MOUNT STATUS"
   echo "===================================================================="
   local entries=(
     "Global Anchor (PSTACK_HOME):$HOME/.config/pstack/home"
     "Global CLI (pstack):$HOME/.local/bin/pstack"
     "Global Gate (pstack-verify):$HOME/.local/bin/pstack-verify"
+    "Global MCP (pstack-mcp):$HOME/.local/bin/pstack-mcp"
     "Global Spawner (ag-spawn):$HOME/.local/bin/ag-spawn"
     "Antigravity (agy):$HOME/.gemini/config/skills/pstack"
+    "Antigravity (/reframe):$HOME/.gemini/config/skills/reframe"
+    "Antigravity (/sharpen):$HOME/.gemini/config/skills/sharpen"
     "Claude Code (claude):$HOME/.claude/skills/pstack"
     "Codex CLI (codex):$HOME/.codex/skills/pstack"
+    "Codex Companion (/reframe):$HOME/.codex/skills/reframe"
+    "Codex Companion (/sharpen):$HOME/.codex/skills/sharpen"
     "OpenCode Skill:$HOME/.config/opencode/skills/pstack"
     "OpenCode Command (/pstack):$HOME/.config/opencode/command/pstack.md"
+    "OpenCode Command (/reframe):$HOME/.config/opencode/command/reframe.md"
+    "OpenCode Command (/sharpen):$HOME/.config/opencode/command/sharpen.md"
+    "OpenCode Command (/pstack-swarm):$HOME/.config/opencode/command/pstack-swarm.md"
+    "OpenCode Command (/pstack-mcp):$HOME/.config/opencode/command/pstack-mcp.md"
     "Cursor IDE (cursor):$HOME/.cursor/skills-cursor/pstack"
-    "WorkBuddy AI (workbuddy):$HOME/.workbuddy-ai/skills/pstack"
+    "WorkBuddy AI (workbuddy-ai):$HOME/.workbuddy-ai/skills/pstack"
+    "WorkBuddy (workbuddy):$HOME/.workbuddy/skills/pstack"
     "Pi Agent (pi):$HOME/.pi/agent/skills/pstack"
     "Universal Agent Pool:$HOME/.agents/skills/pstack"
   )
@@ -91,18 +113,19 @@ print_status() {
     if [[ -e "$path" ]]; then
       local resolved
       resolved="$(readlink "$path" || echo "$path")"
-      printf "  [MOUNTED] %-28s -> %s\n" "$label" "$resolved"
+      printf "  [MOUNTED] %-32s -> %s\n" "$label" "$resolved"
     else
-      printf "  [MISSING] %-28s -> %s\n" "$label" "$path"
+      printf "  [MISSING] %-32s -> %s\n" "$label" "$path"
       missing=$((missing + 1))
     fi
   done
+  python3 "$SOURCE_ROOT/scripts/pstack_update.py" --status-agents || true
   python3 "$SOURCE_ROOT/scripts/pstack_update.py" --status-line || true
   echo "===================================================================="
   if [[ "$missing" -gt 0 ]]; then
     return 1
   fi
-  echo "STATUS : ALL CHECKS GREEN (8/8 local agents + global CLI mounted)"
+  echo "STATUS : ALL CHECKS GREEN (all local agents, MCP, & global CLI mounted)"
   echo "===================================================================="
   return 0
 }

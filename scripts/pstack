@@ -5,6 +5,10 @@ SCRIPT_DIR="$(python3 -c 'import os,sys; print(os.path.dirname(os.path.realpath(
 SUBCMD="${1:-status}"
 shift || true
 
+if [[ "${PSTACK_SKIP_AUTO_SYNC:-0}" != "1" && "$SUBCMD" != "update" ]]; then
+  python3 "$SCRIPT_DIR/pstack_update.py" --auto-sync --quiet || true
+fi
+
 case "$SUBCMD" in
   init)
     TARGET_DIR="${1:-.}"
@@ -26,6 +30,9 @@ case "$SUBCMD" in
     ;;
   run)
     exec python3 "$SCRIPT_DIR/pstack_router.py" run "$@"
+    ;;
+  auto)
+    exec python3 "$SCRIPT_DIR/pstack_router.py" auto "$@"
     ;;
   swarm)
     exec python3 "$SCRIPT_DIR/pstack_scheduler.py" swarm "$@"

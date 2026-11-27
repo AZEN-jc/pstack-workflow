@@ -162,8 +162,10 @@ pstack bench
 pstack mcp --self-test
 pstack verify handoff --fix
 
-# Bilingual Repo-Map routing, bounded auto-rework, parallel Swarm, and Git pre-commit hook
+# Bilingual Repo-Map routing, pre-flight /reframe -> /sharpen staging, bounded auto-rework, parallel Swarm, and Git pre-commit hook
 pstack route "修复状态机超时恢复异常" --json
+pstack route --from-sharpen
+pstack run --from-sharpen --max-rework 2
 pstack run "修复路由 Bug" --runner codex --max-rework 2
 pstack swarm --dry-run && pstack arena --dry-run && pstack tree
 pstack hook install && pstack hook status

@@ -156,6 +156,74 @@ def classify_goal(goal: str, models_cfg: dict | None = None) -> dict:
     }
 
 
+FUZZY_MARKERS = (
+    "我想做", "想搞个", "能不能做", "类似", "不知道怎么叫", "概念", "想法", "优化一下体验",
+    "觉得不好用", "感觉", "方向", "怎么做比较好", "有什么方案", "模糊", "不太确定",
+    "something like", "not sure what it's called", "vague", "idea", "brainstorm", "how should i",
+)
+TRIVIAL_MARKERS = (
+    "typo", "拼写", "改文案", "改个名", "重命名", "rename", "格式", "format", "bump", "版本号",
+    "注释", "log", "打印", "小修", "一行", "错别字",
+)
+DEEP_MARKERS = (
+    "架构", "重构", "状态机", "并行", "调度", "协议", "安全", "性能", "跨模块", "自动化", "工作流",
+    "引擎", "门禁", "迁移", "系统", "architecture", "refactor", "scheduler", "protocol", "distributed",
+    "migration", "pipeline", "automation", "workflow", "engine",
+)
+
+
+def assess_clarity(goal: str, pointers: list[str] | None = None, models_cfg: dict | None = None) -> dict:
+    raw = goal.strip()
+    text = raw.lower()
+    classification = classify_goal(raw, models_cfg)
+
+    has_explicit_code_ref = bool(re.search(r"[A-Za-z0-9_./-]+\.(?:py|ts|tsx|js|go|rs|sh|md|json|yaml|yml)\b", raw))
+    has_symbol_ref = bool(re.search(r"(?:#[A-Za-z_][A-Za-z0-9_]*|`[^`]+`|[a-z]+_[a-z0-9_]+)", raw))
+    has_fuzzy_marker = any(m in text for m in FUZZY_MARKERS)
+    has_trivial_marker = any(m in text for m in TRIVIAL_MARKERS)
+    has_deep_marker = any(m in text for m in DEEP_MARKERS)
+
+    reasons: list[str] = []
+    if has_fuzzy_marker and not (has_explicit_code_ref and has_symbol_ref):
+        level = "L2_FUZZY"
+        reasons.append("matched fuzzy/exploratory phrasing without concrete code+symbol anchor")
+        pipeline = ["reframe", "sharpen", "decision_gate", "route_from_sharpen"]
+        requires_decision = True
+    elif len(raw) <= 28 and not has_explicit_code_ref and not has_symbol_ref and not has_trivial_marker:
+        level = "L2_FUZZY"
+        reasons.append("short underspecified request lacking concrete file/symbol anchors")
+        pipeline = ["reframe", "sharpen", "decision_gate", "route_from_sharpen"]
+        requires_decision = True
+    elif has_trivial_marker and not has_deep_marker and classification["complexity"] == "simple":
+        level = "L0_TRIVIAL"
+        reasons.append("matched trivial/localized edit pattern with simple complexity")
+        pipeline = ["route_and_execute"]
+        requires_decision = False
+    elif (
+        has_deep_marker
+        or classification["complexity"] == "complex"
+        or classification["intent"] in ("architecture-feature", "refactor", "swarm", "figure-it-out")
+    ):
+        level = "L1_CLEAR_DEEP"
+        reasons.append(f"clear goal with deep scope (intent={classification['intent']}, complexity={classification['complexity']})")
+        pipeline = ["sharpen", "decision_gate", "route_from_sharpen"]
+        requires_decision = True
+    else:
+        level = "L0_TRIVIAL"
+        reasons.append("concrete simple task eligible for direct execution")
+        pipeline = ["route_and_execute"]
+        requires_decision = False
+
+    return {
+        "level": level,
+        "requires_decision": requires_decision,
+        "recommended_pipeline": pipeline,
+        "reasons": reasons,
+        "has_code_anchor": has_explicit_code_ref or has_symbol_ref,
+        "discovered_pointers_count": len(pointers) if pointers is not None else 0,
+    }
+
+
 BILINGUAL_LEXICON: dict[str, tuple[str, ...]] = {
     "状态机": ("state", "dag", "session", "snapshot"),
     "状态": ("state", "dag", "session", "snapshot", "status"),
@@ -537,7 +605,8 @@ def auto_discover_pointers_and_scope(
             content_hits += sum(1 for term in cjk_terms if term in combined_span_raw)
 
             ref_bonus = min(ref_count, 4) if (sym_hits + content_hits) > 0 else 0
-            score = (sym_hits * 5) + (content_hits * 2) + ref_bonus + (git_bonus * 3)
+            effective_git_bonus = (2 if sym_hits > 0 else 1) if (git_bonus and (sym_hits + content_hits) > 0) else 0
+            score = (sym_hits * 5) + (content_hits * 2) + ref_bonus + effective_git_bonus
             ranked_candidates.append((score, sym_hits, ref_count, rel, s_start, s_end, s_name))
 
     ranked_candidates.sort(key=lambda item: (-item[0], -item[1], -item[2], item[3], item[4]))
@@ -723,17 +792,118 @@ def run_cli(goal: str, runner: str, dry_run: bool, max_rework: int = 0) -> int:
     return proc.returncode
 
 
+def load_sharpened_prompt(workspace_root: Path | None = None) -> str:
+    ws = (workspace_root or get_workspace_root()).resolve()
+    staged_path = ws / ".agents" / "handoffs" / "sharpened-prompt.md"
+    if not staged_path.is_file():
+        raise FileNotFoundError(f"Staged prompt not found: {staged_path} (run /sharpen first)")
+    content = staged_path.read_text(encoding="utf-8").strip()
+    if not content:
+        raise ValueError(f"Staged prompt is empty: {staged_path}")
+    return content
+
+
+def _resolve_cli_goal(raw_goal: str, from_sharpen: bool) -> str:
+    if from_sharpen:
+        return load_sharpened_prompt(get_workspace_root())
+    goal_text = raw_goal.strip()
+    if not goal_text:
+        raise ValueError("Missing goal text. Provide a goal argument or pass --from-sharpen.")
+    return goal_text
+
+
+def auto_cli(
+    goal: str,
+    runner: str,
+    dry_run: bool,
+    approved: bool,
+    json_mode: bool,
+    max_rework: int = 2,
+) -> int:
+    ws = get_workspace_root()
+    staged_path = ws / ".agents" / "handoffs" / "sharpened-prompt.md"
+    has_staged = staged_path.is_file() and bool(staged_path.read_text(encoding="utf-8").strip())
+
+    if approved and has_staged:
+        staged_goal = load_sharpened_prompt(ws)
+        if json_mode:
+            brief_file = generate_brief(staged_goal, ws)
+            payload = {
+                "status": "APPROVED_ROUTED" if dry_run else "APPROVED_EXECUTING",
+                "source": "sharpened-prompt.md",
+                "brief_path": str(brief_file),
+                "runner": runner,
+                "max_rework": max_rework,
+            }
+            print(json.dumps(payload, indent=2, ensure_ascii=False))
+            return 0
+        return run_cli(staged_goal, runner, dry_run, max_rework=max_rework)
+
+    goal_text = goal.strip()
+    if not goal_text:
+        raise ValueError("Missing goal text. Provide a goal argument or stage .agents/handoffs/sharpened-prompt.md with --approved.")
+
+    cfg = load_models_config(ws)
+    classification = classify_goal(goal_text, cfg)
+    pointers, allowed_paths = auto_discover_pointers_and_scope(goal_text, ws)
+    clarity = assess_clarity(goal_text, pointers=pointers, models_cfg=cfg)
+
+    if clarity["level"] == "L0_TRIVIAL" and approved:
+        return run_cli(goal_text, runner, dry_run, max_rework=max_rework)
+
+    payload = {
+        "status": "READY_DIRECT_EXECUTION" if clarity["level"] == "L0_TRIVIAL" else "AWAITING_DECISION",
+        "goal": goal_text,
+        "clarity": clarity,
+        "classification": classification,
+        "allowed_paths": allowed_paths,
+        "pointers": pointers,
+        "has_staged_prompt": has_staged,
+        "staged_prompt_path": str(staged_path),
+    }
+
+    if json_mode:
+        print(json.dumps(payload, indent=2, ensure_ascii=False))
+        return 0
+
+    print("=" * 68)
+    print("PSTACK v3.3 AUTONOMOUS PRE-FLIGHT FUNNEL (HUMAN-ONLY-DECIDES)")
+    print("=" * 68)
+    print(f"GOAL        : {goal_text}")
+    print(f"CLARITY     : {clarity['level']} (decision_gate={clarity['requires_decision']})")
+    print(f"PIPELINE    : {' -> '.join(clarity['recommended_pipeline'])}")
+    print(f"INTENT      : {classification['intent']} ({classification['complexity']})")
+    print(f"POINTERS    : {len(pointers)} AST symbols anchored")
+    print(f"STAGED FILE : {staged_path} ({'present' if has_staged else 'not yet staged'})")
+    print("=" * 68)
+    if clarity["level"] == "L0_TRIVIAL":
+        print("[NEXT] Trivial clear task. Re-run with `--approved` or `pstack run` to execute directly.")
+    else:
+        print("[NEXT] Read-only triage complete (no code modified). Run pre-flight skills, approve Decision Gate, then execute `pstack auto --approved --max-rework 2`.")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="pstack Zero-Token Task Router & 5-Role Model Matrix")
     subparsers = parser.add_subparsers(dest="command")
 
     route_p = subparsers.add_parser("route", help="Route goal, discover AST pointers, write active-brief.md")
-    route_p.add_argument("goal", type=str, help="Natural language goal or task prompt")
+    route_p.add_argument("goal", type=str, nargs="?", default="", help="Natural language goal or task prompt")
+    route_p.add_argument(
+        "--from-sharpen",
+        action="store_true",
+        help="Load goal from .agents/handoffs/sharpened-prompt.md",
+    )
     route_p.add_argument("--output", type=Path, default=None, help="Custom output brief path")
     route_p.add_argument("--json", action="store_true", help="Output routing decision as JSON")
 
     run_p = subparsers.add_parser("run", help="Route goal and trigger execution loop")
-    run_p.add_argument("goal", type=str, help="Natural language goal or task prompt")
+    run_p.add_argument("goal", type=str, nargs="?", default="", help="Natural language goal or task prompt")
+    run_p.add_argument(
+        "--from-sharpen",
+        action="store_true",
+        help="Load goal from .agents/handoffs/sharpened-prompt.md",
+    )
     run_p.add_argument("--runner", default="antigravity", help="Target agent runner")
     run_p.add_argument("--dry-run", action="store_true", help="Simulate execution without modifying files")
     run_p.add_argument(
@@ -743,11 +913,47 @@ def main() -> int:
         help="Bounded auto-rework rounds on gate failure",
     )
 
+    auto_p = subparsers.add_parser("auto", help="Run L0/L1/L2 clarity triage and execute once Decision Gate is approved")
+    auto_p.add_argument("goal", type=str, nargs="?", default="", help="Natural language goal or task prompt")
+    auto_p.add_argument("--runner", default="antigravity", help="Target agent runner")
+    auto_p.add_argument("--dry-run", action="store_true", help="Simulate execution without modifying files")
+    auto_p.add_argument("--approved", action="store_true", help="Decision Gate approved; execute staged or L0 goal")
+    auto_p.add_argument("--json", action="store_true", help="Output triage payload as JSON")
+    auto_p.add_argument(
+        "--max-rework",
+        type=int,
+        default=int(os.environ.get("PSTACK_MAX_REWORK", "2") or "2"),
+        help="Bounded auto-rework rounds on gate failure (default: 2)",
+    )
+
     args = parser.parse_args()
     if args.command == "route":
-        return route_cli(args.goal, args.output, args.json)
+        try:
+            goal_text = _resolve_cli_goal(args.goal, args.from_sharpen)
+        except (FileNotFoundError, ValueError) as exc:
+            print(f"[ERROR] {exc}", file=sys.stderr)
+            return 2
+        return route_cli(goal_text, args.output, args.json)
     if args.command == "run":
-        return run_cli(args.goal, args.runner, args.dry_run, max_rework=args.max_rework)
+        try:
+            goal_text = _resolve_cli_goal(args.goal, args.from_sharpen)
+        except (FileNotFoundError, ValueError) as exc:
+            print(f"[ERROR] {exc}", file=sys.stderr)
+            return 2
+        return run_cli(goal_text, args.runner, args.dry_run, max_rework=args.max_rework)
+    if args.command == "auto":
+        try:
+            return auto_cli(
+                args.goal,
+                args.runner,
+                args.dry_run,
+                approved=args.approved,
+                json_mode=args.json,
+                max_rework=args.max_rework,
+            )
+        except (FileNotFoundError, ValueError) as exc:
+            print(f"[ERROR] {exc}", file=sys.stderr)
+            return 2
 
     parser.print_help()
     return 2

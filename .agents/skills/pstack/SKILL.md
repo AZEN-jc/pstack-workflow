@@ -1,25 +1,25 @@
 ---
 name: pstack
 description: >-
-  Autonomous Pstack v3.0 protocol stack dual-engine workflow for Antigravity, Claude Code, Codex, OpenCode, Cursor, WorkBuddy, and Pi.
+  Autonomous Pstack v3.1 protocol stack dual-engine workflow for Antigravity, Claude Code, Codex, OpenCode, Cursor, WorkBuddy, and Pi.
   Enforces Tier 0/1/2 context planning, desktop dual-tab Builder + Independent Verifier isolation, pointer-only briefs,
   empirical decision.tsv logging, Comment Sicko code hygiene, and 4-gate deterministic verification.
 ---
 
-# Pstack v3.0 Universal Multi-Agent Skill
+# Pstack v3.1 Universal Multi-Agent Skill
 
-Activate this skill whenever the user invokes `/pstack-run`, `/pstack`, `/pstack-build`, `/pstack-verify`, `/pstack-pickup`, mentions `pstack` or protocol stack workflow, or requests rigorous bug root-cause isolation, adversarial code review (`/interrogate`), X tech threads (`tech-thread`), or Build-in-Public engineering postmortems.
+Activate this skill whenever the user invokes `/pstack-run`, `/pstack`, `/pstack-build`, `/pstack-verify`, `/pstack-swarm`, `/pstack-mcp`, `/pstack-pickup`, mentions `pstack` or protocol stack workflow, or requests rigorous bug root-cause isolation, adversarial code review (`/interrogate`), X tech threads (`tech-thread`), or Build-in-Public engineering postmortems.
 
-## 1. 3-Tier Self-Discovery & 8-Host Mounts
+## 1. 3-Tier Self-Discovery & Multi-Host Mounts
 
-1. **Global Anchor (`PSTACK_HOME`)**: `~/.config/pstack/home` links to the canonical Pstack repository, and `~/.local/bin/{pstack,pstack-verify,ag-spawn}` is mounted on `$PATH`.
-2. **Local Skill Mounts (8/8 Hosts)**:
+1. **Global Anchor (`PSTACK_HOME`)**: `~/.config/pstack/home` links to the canonical Pstack repository, and `~/.local/bin/{pstack,pstack-verify,pstack-mcp,ag-spawn}` is mounted on `$PATH` with commit-SHA auto-sync (`~/.config/pstack/.last_synced_commit`).
+2. **Local Skill & MCP Mounts**:
    - **Antigravity (`agy`)**: `~/.gemini/config/skills/pstack`
-   - **Claude Code (`claude`)**: `~/.claude/skills/pstack`
-   - **Codex CLI (`codex`)**: `~/.codex/skills/pstack`
-   - **OpenCode (`opencode`)**: `~/.config/opencode/skills/pstack` + `~/.config/opencode/command/*.md`
-   - **Cursor (`cursor`)**: `~/.cursor/skills-cursor/pstack`
-   - **WorkBuddy AI (`workbuddy`)**: `~/.workbuddy-ai/skills/pstack`
+   - **Claude Code (`claude`)**: `~/.claude/skills/pstack` + `~/.claude/CLAUDE.md` + `~/.claude.json` (`mcpServers.pstack`)
+   - **Codex CLI (`codex`)**: `~/.codex/skills/pstack` + `~/.codex/AGENTS.md` + `~/.codex/config.toml` (`[mcp_servers.pstack]`)
+   - **OpenCode (`opencode`)**: `~/.config/opencode/skills/pstack` + `~/.config/opencode/AGENTS.md` + `~/.config/opencode/command/*.md` (`/pstack-swarm`, `/pstack-mcp`, etc.) + `~/.config/opencode/opencode.json` (`mcp.pstack`)
+   - **Cursor (`cursor`)**: `~/.cursor/skills-cursor/pstack` + `~/.cursor/mcp.json` (`mcpServers.pstack`)
+   - **WorkBuddy AI (`workbuddy`)**: `~/.workbuddy-ai/skills/pstack` + `~/.workbuddy/skills/pstack` + `~/.workbuddy-ai/SOUL.md` + `~/.workbuddy/SOUL.md`
    - **Pi (`pi`)**: `~/.pi/agent/skills/pstack`
    - **Universal Agent Pool**: `~/.agents/skills/pstack`
 3. **Overlay Asset Lookup (`scripts/pstack_resolver.py`)**:
@@ -27,24 +27,24 @@ Activate this skill whenever the user invokes `/pstack-run`, `/pstack`, `/pstack
 
 ## 2. Desktop Dual-Tab Loop & Slash Triggers
 
-1. **Read Coordinator Core First**:
-   Read `.agents/pstack/pstack-core.md` (strictly `<= 48 lines`, or `~/.config/pstack/home/.agents/pstack/pstack-core.md`).
-2. **Tab 1 — Builder (`/pstack-build`)**:
+1. **Read Coordinator Core & Auto-Triage First**:
+   Read `.agents/pstack/pstack-core.md` (strictly `<= 48 lines`, or `~/.config/pstack/home/.agents/pstack/pstack-core.md`). Automatically triage incoming requests into `L0_TRIVIAL` (direct execute), `L1_CLEAR_DEEP` (auto `/sharpen` -> `.agents/handoffs/sharpened-prompt.md` -> single Decision Gate), or `L2_FUZZY` (auto `/reframe` -> `/sharpen` -> Decision Gate). Never edit business code before the user approves the Decision Gate; once approved, automatically execute `pstack route --from-sharpen` + fresh subagent (or `pstack run --from-sharpen --max-rework 2`) + `pstack verify all`.
+2. **Tab 1: Builder (`/pstack-build`)**:
    - Output 3-line alignment (`Target`, `Premise & Bottleneck`, `Smallest Leap`) in your own words.
    - Copy the selected playbook from `.agents/pstack/playbooks/` verbatim as your checklist.
    - Write `> [Builder Restate]` (<= 3 lines) at the top of `.agents/handoffs/output-draft.md`.
    - Run `pstack verify all` (Gate 1 Handoff + Gate 2 Prose + Gate 3 Code Slop + Gate 4 Runtime `verify_cmd` digest into `evidence-pack.md`).
-3. **Tab 2 — Independent Verifier (`/pstack-verify` in a fresh Tab or subagent)**:
+3. **Tab 2: Independent Verifier (`/pstack-verify` in a fresh Tab or subagent)**:
    - Run `pstack verify prep-verifier` to inspect the <= 20 line read-only digest (`active-brief.md`, `[Builder Restate]`, `Runtime Verification Digest`, and `git diff --stat`).
    - Write a 4-tier adversarial verdict (`ACT_ON`, `CONSIDER`, `NOTED`, `DISMISSED` + `VERDICT: PASS | REJECT`) to `.agents/handoffs/verifier-verdict.md`.
    - Run `pstack verify verdict` to validate the verdict and automatically export `.agents/handoffs/output-final.md` (with `> [Builder Restate]` stripped).
-4. **Zero-Token Offline Tooling (`pstack run`, `route`, `swarm`, `arena`, `resume`, `tree`, `hook`, `mcp`, `pickup`, `bench`)**:
-   - `pstack route "<goal>"` / `pstack run "<goal>" --max-rework 2`: Bilingual Repo-Map symbol ranking across `.py/.ts/.tsx/.js/.go/.rs/.sh` and bounded self-healing rework loop.
+4. **Zero-Token Offline Tooling (`pstack auto`, `run`, `route`, `swarm`, `arena`, `resume`, `tree`, `hook`, `mcp`, `pickup`, `bench`)**:
+   - `pstack auto "<goal>" [--json|--approved|--max-rework 2]` / `pstack route --from-sharpen`: Automatic L0/L1/L2 clarity triage, staged prompt handoff, bilingual Repo-Map symbol ranking across `.py/.ts/.tsx/.js/.go/.rs/.sh`, and bounded self-healing rework loop.
    - `pstack swarm` / `pstack arena` / `pstack resume` / `pstack tree`: Topological wave-parallel `WorktreeSandbox` execution with 3-way Git patch merging and `events.jsonl` observability.
-   - `pstack hook <install|uninstall|status>` & `pstack mcp [--self-test|--list-tools]`: Git pre-commit enforcement and zero-dependency JSON-RPC 2.0 Stdio MCP server (5 tools).
+   - `pstack hook <install|uninstall|status>` & `pstack mcp [--self-test|--list-tools]`: Git pre-commit enforcement and zero-dependency JSON-RPC 2.0 Stdio MCP server (6 tools including `pstack_triage`).
    - `pstack pause "<note>"` / `pstack pickup`: Generate and read `.agents/handoffs/session-snapshot.md` (<= 20 lines, with automatic crash log pointer recovery from `.agents/handoffs/logs/`).
    - `pstack verify handoff --fix`: Validate line bounds (`1 <= start <= end <= total_lines`) and auto-heal drifted `file:start-end#symbol_name` pointers via AST/regex resolution.
    - `pstack correct --scan | --code-rule "<regex>" "<reason>" | --prose-ban "<phrase>"`: Promote lessons from `.agents/decision.tsv` into mechanical regex/prose rules.
    - `pstack onboard --detect [--profile strict|fast] | --to-thread`: Auto-detect chained `Test + Lint + Typecheck` project `verify_cmd` or synthesize `active-brief.md` from recent Git commits.
    - `pstack bench [--live]` & `pstack test`: Run the standard library unit test suite (`tests/test_pstack_harness.py`) and 0-token reproducible benchmark (`benchmarks/latest-report.md`).
-   - `pstack update [--check|--apply]` / `/pstack-update`: Check remote commit updates and fast-forward all 8 local agent mounts.
+   - `pstack update [--check|--sync-agents|--auto-sync]` / `/pstack-update`: Check remote commit updates, fast-forward `PSTACK_HOME`, and sync directives, skill symlinks, and MCP configs across all local coding agents.

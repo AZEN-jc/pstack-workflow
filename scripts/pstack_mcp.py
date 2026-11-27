@@ -18,14 +18,33 @@ from contextlib import redirect_stdout
 from pathlib import Path
 
 from pstack_resolver import ensure_workspace_skeleton, get_workspace_root
-from pstack_router import auto_discover_pointers_and_scope, classify_goal, generate_brief, load_models_config
+from pstack_router import (
+    assess_clarity,
+    auto_discover_pointers_and_scope,
+    classify_goal,
+    generate_brief,
+    load_models_config,
+    load_sharpened_prompt,
+)
 from pstack_scheduler import execute_arena, execute_swarm, load_dag_state
 from pstack_tree import load_tree_data, render_ascii_tree
 
 MCP_PROTOCOL_VERSION = "2024-11-05"
-SERVER_INFO = {"name": "pstack-mcp", "version": "3.1.0"}
+SERVER_INFO = {"name": "pstack-mcp", "version": "3.3.0"}
 
 MCP_TOOLS: list[dict[str, object]] = [
+    {
+        "name": "pstack_triage",
+        "description": "Read-only 0-token L0/L1/L2 clarity triage and Repo-Map pointer discovery before Decision Gate.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "goal": {"type": "string", "description": "Raw user goal or idea"},
+                "workspace": {"type": "string", "description": "Optional target workspace root path"},
+            },
+            "required": ["goal"],
+        },
+    },
     {
         "name": "pstack_route",
         "description": "Classify goal intent/tier and generate active-brief.md with ranked bilingual Repo-Map pointers.",
@@ -33,10 +52,15 @@ MCP_TOOLS: list[dict[str, object]] = [
             "type": "object",
             "properties": {
                 "goal": {"type": "string", "description": "Task goal or natural language instruction"},
+                "from_sharpen": {
+                    "type": "boolean",
+                    "default": False,
+                    "description": "Load goal from .agents/handoffs/sharpened-prompt.md",
+                },
                 "output": {"type": "string", "description": "Optional custom brief output path"},
                 "workspace": {"type": "string", "description": "Optional target workspace root path"},
             },
-            "required": ["goal"],
+            "required": [],
         },
     },
     {
@@ -112,10 +136,13 @@ def _resolve_ws(arguments: dict, default_workspace: Path | None = None) -> Path:
 
 
 def _tool_pstack_route(arguments: dict, default_workspace: Path | None) -> dict:
-    goal = str(arguments.get("goal", "")).strip()
-    if not goal:
-        raise ValueError("Missing required parameter: goal")
     ws = _resolve_ws(arguments, default_workspace)
+    if arguments.get("from_sharpen"):
+        goal = load_sharpened_prompt(ws)
+    else:
+        goal = str(arguments.get("goal", "")).strip()
+    if not goal:
+        raise ValueError("Missing required parameter: goal (or set from_sharpen=true)")
     output_arg = arguments.get("output")
     output_path = Path(str(output_arg)).expanduser().resolve() if output_arg else None
     cfg = load_models_config(ws)
@@ -222,7 +249,32 @@ def _tool_pstack_tree(arguments: dict, default_workspace: Path | None) -> dict:
     return {"content": [{"type": "text", "text": json.dumps(payload, indent=2, ensure_ascii=False)}], "isError": False}
 
 
+def _tool_pstack_triage(arguments: dict, default_workspace: Path | None) -> dict:
+    goal = str(arguments.get("goal", "")).strip()
+    if not goal:
+        raise ValueError("Missing required parameter: goal")
+    ws = _resolve_ws(arguments, default_workspace)
+    cfg = load_models_config(ws)
+    classification = classify_goal(goal, cfg)
+    pointers, allowed_paths = auto_discover_pointers_and_scope(goal, ws)
+    clarity = assess_clarity(goal, pointers=pointers, models_cfg=cfg)
+    staged_path = ws / ".agents" / "handoffs" / "sharpened-prompt.md"
+    has_staged = staged_path.is_file() and bool(staged_path.read_text(encoding="utf-8").strip())
+    payload = {
+        "status": "READY_DIRECT_EXECUTION" if clarity["level"] == "L0_TRIVIAL" else "AWAITING_DECISION",
+        "goal": goal,
+        "clarity": clarity,
+        "classification": classification,
+        "allowed_paths": allowed_paths,
+        "pointers": pointers,
+        "has_staged_prompt": has_staged,
+        "staged_prompt_path": str(staged_path),
+    }
+    return {"content": [{"type": "text", "text": json.dumps(payload, indent=2, ensure_ascii=False)}], "isError": False}
+
+
 TOOL_HANDLERS = {
+    "pstack_triage": _tool_pstack_triage,
     "pstack_route": _tool_pstack_route,
     "pstack_verify": _tool_pstack_verify,
     "pstack_swarm": _tool_pstack_swarm,
@@ -438,7 +490,18 @@ def run_self_test() -> int:
         )
         assert list_resp is not None
         tool_names = [t["name"] for t in list_resp["result"]["tools"]]
-        assert tool_names == ["pstack_route", "pstack_verify", "pstack_swarm", "pstack_arena", "pstack_tree"]
+        assert tool_names == ["pstack_triage", "pstack_route", "pstack_verify", "pstack_swarm", "pstack_arena", "pstack_tree"]
+
+        triage_resp = handle_jsonrpc_message(
+            {
+                "jsonrpc": "2.0",
+                "id": 21,
+                "method": "tools/call",
+                "params": {"name": "pstack_triage", "arguments": {"goal": "我想做一个自动调度工具但不知道怎么叫", "workspace": str(ws)}},
+            },
+            default_workspace=ws,
+        )
+        assert triage_resp is not None and not triage_resp["result"]["isError"]
 
         route_resp = handle_jsonrpc_message(
             {
@@ -462,7 +525,7 @@ def run_self_test() -> int:
         )
         assert tree_resp is not None and not tree_resp["result"]["isError"]
 
-    print("[OK] Pstack MCP Server self-test passed (5 tools, JSON-RPC 2.0 Stdio)")
+    print("[OK] Pstack MCP Server self-test passed (6 tools, JSON-RPC 2.0 Stdio)")
     return 0
 
 
@@ -477,6 +540,15 @@ def main() -> int:
         return 0
     if args.self_test:
         return run_self_test()
+    try:
+        from pstack_resolver import get_pstack_home
+        from pstack_update import auto_sync_if_needed
+
+        pstack_home = get_pstack_home()
+        if (pstack_home / ".git").exists():
+            auto_sync_if_needed(pstack_home, quiet=True)
+    except Exception as exc:
+        sys.stderr.write(f"[pstack-mcp] auto-sync skipped: {exc}\n")
     return serve_stdio()
 
 

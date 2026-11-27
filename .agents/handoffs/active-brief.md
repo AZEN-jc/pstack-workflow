@@ -10,11 +10,14 @@ required_principles:
 verify_cmd: "python3 -m unittest discover -s tests -q && python3 scripts/verify-handoff.py && python3 scripts/verify-code-slop.py scripts tests"
 allowed_paths:
   - ".agents/*"
+  - ".cursor/rules/*"
   - ".github/*"
   - "adapters/*"
   - "benchmarks/*"
   - "scripts/*"
   - "tests/*"
+  - "AGENTS.md"
+  - "CLAUDE.md"
   - "README.md"
   - "README_ZH.md"
   - "UPGRADE_V2.md"
@@ -31,7 +34,7 @@ model_tier: "deep_tier"
 - [Module 4: Hook & MCP Server] 新增 `scripts/pstack_hook.py` (`pstack hook`) 与 `scripts/pstack_mcp.py` (`pstack mcp`)，暴露 5 个 JSON-RPC 2.0 MCP 工具并同步挂载至 `bootstrap-repo.sh`、文档与 CI。
 
 ## 3. Evidence Pointers (Read-Only Context)
-- 任务路由与符号发现：`scripts/pstack_router.py:418-576#auto_discover_pointers_and_scope`
+- 任务路由与符号发现：`scripts/pstack_router.py:486-645#auto_discover_pointers_and_scope`
 - 拓扑调度与沙箱合入：`scripts/pstack_scheduler.py:72-235#merge_worktree_to_workspace`
 - 多语言正则大括号跨度：`scripts/verify-handoff.py:284-327#_find_regex_symbol_span`
 - 无状态派发与脏树隔离：`scripts/ag-spawn.sh:103-245#on_spawn_exit`

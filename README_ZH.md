@@ -161,8 +161,10 @@ pstack bench
 pstack mcp --self-test
 pstack verify handoff --fix
 
-# 中英双语 Repo-Map 路由、有界自动返工、真并行 Swarm 与 Git 提交前钩子
+# 中英双语 Repo-Map 路由、前置 /reframe -> /sharpen 暂存转建单、有界自动返工、真并行 Swarm 与 Git 提交前钩子
 pstack route "修复状态机超时恢复异常" --json
+pstack route --from-sharpen
+pstack run --from-sharpen --max-rework 2
 pstack run "修复路由 Bug" --runner codex --max-rework 2
 pstack swarm --dry-run && pstack arena --dry-run && pstack tree
 pstack hook install && pstack hook status
